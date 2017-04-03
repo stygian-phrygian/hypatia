@@ -196,7 +196,7 @@ inchnls		filenchnls Sfilename
 		; mono file loads into iftn and iftn+1
 		; stereo file loads left and right channels into iftn and iftn+1 respectively
 		if (inchnls == 1) then
-				prints "Loading mono sample into ftable # %d\n", iftn
+				prints "Loading mono sample into ftable # %d & %d respectively\n", iftn, iftn+1
 			gir	ftgen iftn  , 0, 0, 1, Sfilename, 0, 0, 0
 			gir	ftgen iftn+1, 0, 0, 1, Sfilename, 0, 0, 0
 		elseif (inchnls == 2) then
@@ -374,7 +374,7 @@ ipartnumber		init p4
 			; all the i-values can be edited during playback but won't reflect changes until the part is retriggered
 isamplenumber		tab_i $PART_SAMPLE , ipartnumber
 
-			prints "playing sample # %d on part # %d\n", isamplenumber, ipartnumber
+			prints "playing ftables: %d & %d on part # %d\n", isamplenumber, isamplenumber+1, ipartnumber
 
 			; -- realtime editable parameters --
 kpitch			tab $PART_PITCH			    , ipartnumber
@@ -692,18 +692,36 @@ endin
 
 ; ------------------------------------------
 instr +OSCLoadSampleIntoPartListener
-kpartnumber	init 1
+kpartnumber	init -1
 Sfilename	strcpy ""
 next:
 kresponse	OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
 if (kresponse == 0) goto done
-;		printks "CSOUND: OSC message received on /loadsample\n", 0
-		; f#, time, defered size, gen#, filename, skiptime, format, which-channel-to-read
-;Sfstatement	sprintfk {{f %d 0 0 1 "%s" 0 0 0 }}, kftablenumber, Sfilename
+		printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
+		; NB.
+		; if you send multiple osc messages quicker than a k-period, this block
+		; will only execute the last message...
+		; scoreline only runs once per k-period
 Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
 		scoreline Sfstatement, 1
-	
+                ;scoreline(sprintfk({{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename), 1)
 		kgoto next
+done:
+endin
+
+; ------------------------------------------
+; /playpart [part# when duration]
+instr +OSCPlayPartListener
+iplaypartinstrument	init nstrnum("PlayPart")
+kpartnumber		init -1
+kwhen			init -1
+kduration		init -1
+next:
+kresponse		OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
+			if (kresponse == 0) goto done
+				printks "CSOUND: OSC message received on /playpart\n", 0
+				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			kgoto next
 done:
 endin
 ; ------------------------------------------
@@ -754,6 +772,7 @@ endin
 turnon nstrnum("Master")
 ; turn on OSC listeners
 turnon nstrnum("OSCLoadSampleIntoPartListener")
+turnon nstrnum("OSCPlayPartListener")
 turnon nstrnum("OSCRecordIntoPartListener")
 
 ; limit the allocations of Recorder to 1
