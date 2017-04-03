@@ -220,10 +220,12 @@ Sfilename	init p5
 		turnoff
 	endif
 
-	itrueftableindex = $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
-	event_i "LoadSample", 0, -1, itrueftableindex, Sfilename
-	tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
-	turnoff
+	itrueftableindex	init $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
+	Sfstatement		sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, itrueftableindex, Sfilename
+				scoreline Sfstatement, 1
+;				event_i "i", "LoadSample", 0, -1, itrueftableindex, Sfilename
+				tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
+				turnoff
 endin
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -625,14 +627,17 @@ endin
 ; critical to workflow (tweak - resample - repeat)
 ;
 ; NB. This instrument must come at the end of all the audio processing
-; *BUT* before MasterTrack clears the master signal data
+; *BUT* before Master clears the master signal data
 ; CSound's DSP precedence... Yep.
 
-instr +Recorder
+instr +RecordIntoPart
 
 #define MODE_RECORD_MASTER	#0#
 
 imode		init p4	; 0 - mastertrack, != 0 - audio_in
+ipartnumber     init p5
+
+kreleased	release
 
 ; generate a different filename each time instrument is called
 ; perhaps name should be conjoined from existing vocabulary?
@@ -650,25 +655,32 @@ Smin      strsub    Stim, 14, 16
 Ssec      strsub    Stim, 17, 19
 Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
 
-			;debug
-			prints "Recorder on!"
+	;debug
+	prints "Recording into part#: %d\n", ipartnumber
 
-if     ( imode == $MODE_RECORD_MASTER   ) then
-			fout Sfilename, 14, gamastersigl, gamastersigr
-; NB. this records *pre-fx track* processing and *not* post-fx track
-else
-			; TODO: handle mono/stereo?
-	asigl, asigr	ins
-			; should we be playing audio_in through a track simultaneously ?
-			; outs asigl, asigr
-			fout Sfilename, 14, asigl, asigr
-endif
+	if (imode == $MODE_RECORD_MASTER ) then
+				fout Sfilename, 14, gamastersigl, gamastersigr
+	else
+		asigl, asigr	ins
+				; should we be playing audio_in through a track simultaneously ?
+				; outs asigl, asigr
+				fout Sfilename, 14, asigl, asigr
+	endif
+
+	; when we're done recording
+	; load the new sample into the provided part
+	if (kreleased == 1) then
+	        Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, ipartnumber, Sfilename
+				scoreline Sfstatement, 1
+				printks "Done recording into part#: %d\n", 0, ipartnumber
+				turnoff
+	endif
 
 endin
 
 ; ------------------------------------------
 
-instr +MasterTrack
+instr +Master
 ;		output to DAC
 		outs gamastersigl, gamastersigr
 ;		clear master channels for the next a-rate loop iteration to accumulate into
@@ -699,24 +711,25 @@ endin
 ; which takes as p-values one of the available audio sources
 ; (maybe implement threshold recording?)
 
-instr +OSCRecordListener
+instr +OSCRecordIntoPartListener
 
 ; TODO can we record concurrently?... i think no
 kmode			init 0	; 0 - mastertrack, != 0 - audio_in
-irecorder		nstrnum "Recorder"
+kpartnumber		init 0
+irecorder		nstrnum "RecordIntoPart"
 kcurrentlyrecording	init 0
 
 ; *do not* get rid of this variable, OSClisten needs at least 1 variable to work proper
 kdummyvariable		init 0 
 
-kstart	OSClisten giosclistenhandle, "/recordstart", "i", kmode
+kstart	OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
 kstop	OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
 
 if (kcurrentlyrecording == 1) kgoto checkstop
 if (kstart == 1)  then
 	; turn on the recorder
 	kcurrentlyrecording = 1
-	event "i", irecorder, 0, -1, kmode
+	event "i", irecorder, 0, -1, kmode, kpartnumber
 	printks "CSOUND: started recording...\n", 0
 endif
 
@@ -725,7 +738,7 @@ if (kcurrentlyrecording == 0) kgoto done
 if (kstop == 1) then
 	; turn off the recorder
 	kcurrentlyrecording = 0
-	event "i", -irecorder, 0, 0, 0
+	event "i", -irecorder, 0, 0, 0, 0
 	printks "CSOUND: stopped recording...\n", 0
 endif
 
@@ -738,13 +751,13 @@ endin
 ; ------------------------------------------
 
 ; turn on master track
-turnon nstrnum("MasterTrack")
+turnon nstrnum("Master")
 ; turn on OSC listeners
 turnon nstrnum("OSCLoadSampleIntoPartListener")
-turnon nstrnum("OSCRecordListener")
+turnon nstrnum("OSCRecordIntoPartListener")
 
 ; limit the allocations of Recorder to 1
-maxalloc "Recorder", 1
+maxalloc "RecordIntoPart", 1
 
 
 </CsInstruments>
