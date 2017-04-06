@@ -23,17 +23,23 @@
 
 <CsoundSynthesizer>
 <CsOptions>
+; Select audio/midi flags here according to platform
+;;-odac   -i adc:hw:1,0   ;;;realtime audio I/O
+;;-odac   -i adc:hw:2,0  ;;;realtime audio I/O
+;;-odac -+rtaudio=alsa -i adc:hw:2,0
+;;-odac -iadc:hw:2,0
 
 ; realtime output
 -odac
 
 ; realtime input (will need configuring)
--iadc
+;-iadc
+-iadc:hw:2,0 ; (my zoom h2n usb microphone)
 
 </CsOptions>
 <CsInstruments>
 
-sr	=	48000
+sr	=	44100 ; 48000 makes csound explode UNDERRUNS with -iadc for whatever reason
 ksmps	=	32
 nchnls	=	2
 0dbfs	=	1
@@ -356,8 +362,15 @@ kampattack, kampdecay, kampsustainlevel, kamprelease	xin
 						xout kampenvelope
 endop
 
+instr PartSet
+ipartnumber		init p4
+ipartparameter		init p5
+iparametervalue		init p6
+			tabw_i iparametervalue, ipartparameter, ipartnumber
+			turnoff
+endin
 
-instr PlayPart, 100
+instr PlayPart
 ; playback of a sample (ftable) with an existing part's state (which is also an ftable)
 
 reinitialize_instrument:	; <--- reinitialization label, for use if we change part parameters
@@ -378,56 +391,36 @@ isamplenumber		tab_i $PART_SAMPLE , ipartnumber
 
 			; -- realtime editable parameters --
 kpitch			tab $PART_PITCH			    , ipartnumber
-kpitch			+= p5
 kamp			tab $PART_AMP                       , ipartnumber
-kamp			+= p5
 kfiltercutoff		tab $PART_FILTER_CUTOFF             , ipartnumber 
-kfiltercutoff		+= p7
 kfilterresonance	tab $PART_FILTER_RESONANCE          , ipartnumber 
-kfilterresonance	+= p8
 kfiltertype		tab $PART_FILTER_TYPE               , ipartnumber 
-kfiltertype		+= p9
 kpan			tab $PART_PAN                       , ipartnumber 
-kpan			+= p10
 kdetunespread		tab $PART_DETUNE_SPREAD             , ipartnumber 
-kdetunespread		+= p11
 kdistortionamount	tab $PART_DISTORTION_AMOUNT         , ipartnumber 
-kdistortionamount	+= p12
 			; -- realtime editable parameters
 			; -- but are i-values in the instrument therefore
 			; -- changing them causes instrument reinitialization
 			; -----------------------------------------------
 ksampleoffset		tab $PART_SAMPLE_OFFSET             , ipartnumber
-ksampleoffset		+= p13
 isampleoffset		init i(ksampleoffset)	
 ktimestretchfactor	tab   $PART_TIMESTRETCH_FACTOR      , ipartnumber
-ktimestretchfactor	+= p14
 itimestretchfactor	init i(ktimestretchfactor)
 ktimestretchwindowsize	tab   $PART_TIMESTRETCH_WINDOW_SIZE , ipartnumber
-ktimestretchwindowsize	+= p15
 itimestretchwindowsize	init i(ktimestretchwindowsize)
 ;istepnudge		tab_i $PART_STEP_NUDGE              , ipartnumber
 ;igate			tab_i $PART_GATE                    , ipartnumber
 kbusdestination		tab $PART_BUS_DESTINATION           , ipartnumber
-kbusdestination		+= p16
 			; -----------------------------------------------
 			; -- realtime editable modulation --
 kampattack		tab $PART_AMP_ATTACK                , ipartnumber
-kampattack		+= p17
 kampdecay		tab $PART_AMP_DECAY                 , ipartnumber
-kampdecay		+= p18
 kampsustainlevel	tab $PART_AMP_SUSTAIN_LEVEL         , ipartnumber
-kampsustainlevel	+= p19
 kamprelease		tab $PART_AMP_RELEASE               , ipartnumber
-kamprelease		+= p20
 kenv1attack		tab $PART_ENV1_ATTACK               , ipartnumber
-kenv1attack		+= p21
 kenv1decay		tab $PART_ENV1_DECAY                , ipartnumber
-kenv1decay		+= p22
 kenv1depth		tab $PART_ENV1_DEPTH                , ipartnumber
-kenv1depth		+= p23
 kenv1destination	tab $PART_ENV1_DESTINATION          , ipartnumber
-kenv1destination	+= p24
 			
 			; if user changed sample offset in realtime, reinit this instrument
 			if ( ksampleoffset != isampleoffset ) then
@@ -690,90 +683,75 @@ gamastersigr	= 0.0
 ;		zacl 0, ( 2 * $N_TRACKS ) 
 endin
 
-; ------------------------------------------
-instr +OSCLoadSampleIntoPartListener
-kpartnumber	init -1
-Sfilename	strcpy ""
-next:
-kresponse	OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
-if (kresponse == 0) goto done
-		printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
-		; NB.
-		; if you send multiple osc messages quicker than a k-period, this block
-		; will only execute the last message...
-		; scoreline only runs once per k-period
-Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
-		scoreline Sfstatement, 1
-                ;scoreline(sprintfk({{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename), 1)
-		kgoto next
-done:
-endin
+;
+;
+; NB. These comments are now INVALID
+; Regarding the listener instruments below...
+; It's an awful nest of gotos down there.
+; There's a reason for this.
+; "if - endif" operates once per k-block *only* and
+; our Osclisten opcode can buffer multiple inputs per k-block.
+; *All* the inputs need to be processed lest you
+; run the risk of dropping possibly multiple Osclisten calls.
+; "if - kgoto" can operate multiple times per k-block for whatever reason.  
+; "if - goto" *doesn't* work, it has to be "if - kgoto"
+;
+; Yep.
+;
+; This language is shit.
 
-; ------------------------------------------
-; /playpart [part# when duration]
-instr +OSCPlayPartListener
-iplaypartinstrument	init nstrnum("PlayPart")
+
+; all the OSC listeners need to be in the same instrument
+; lest we start getting weird timing issues.
+instr +OSCListener
+Sfilename		strcpy ""
 kpartnumber		init -1
-kwhen			init -1
-kduration		init -1
-next:
-kresponse		OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
-			if (kresponse == 0) goto done
-				printks "CSOUND: OSC message received on /playpart\n", 0
-				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-			kgoto next
-done:
-endin
-; ------------------------------------------
-; the listener starts and stops a recorder instrument
-; which takes as p-values one of the available audio sources
-; (maybe implement threshold recording?)
-
-instr +OSCRecordIntoPartListener
-
-; TODO can we record concurrently?... i think no
+nextload:
+kload			OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
+			if (kload == 0) kgoto doneload
+						printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
+				Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
+						scoreline Sfstatement, 1
+						kgoto nextload
+doneload:
+;;;;;;;;;;;;;;;;;;;;;;;;
 kmode			init 0	; 0 - mastertrack, != 0 - audio_in
 kpartnumber		init 0
-irecorder		nstrnum "RecordIntoPart"
-kcurrentlyrecording	init 0
-
-; *do not* get rid of this variable, OSClisten needs at least 1 variable to work proper
-kdummyvariable		init 0 
-
-kstart	OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
-kstop	OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
-
-if (kcurrentlyrecording == 1) kgoto checkstop
-if (kstart == 1)  then
-	; turn on the recorder
-	kcurrentlyrecording = 1
-	event "i", irecorder, 0, -1, kmode, kpartnumber
-	printks "CSOUND: started recording...\n", 0
-endif
-
-checkstop:
-if (kcurrentlyrecording == 0) kgoto done
-if (kstop == 1) then
-	; turn off the recorder
-	kcurrentlyrecording = 0
-	event "i", -irecorder, 0, 0, 0, 0
-	printks "CSOUND: stopped recording...\n", 0
-endif
-
-done:
-
+krecorder		init nstrnum("RecordIntoPart")
+nextrecordstart:
+krecordstart		OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
+			if (krecordstart == 0) kgoto donerecordstart
+				; turn on the recorder
+				printks "CSOUND: started recording...\n", 0
+				event "i", krecorder, 0, -1, kmode, kpartnumber
+				kgoto nextrecordstart
+donerecordstart:
+;;;;;;;;;;;;;;;;;;;;;;;;
+kdummyvariable		init 0
+nextrecordstop:
+krecordstop		OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
+			if (krecordstop == 0) kgoto donerecordstop
+				; turn on the recorder
+				printks "CSOUND: stopped recording...\n", 0
+				turnoff2 krecorder, 0, 1
+				kgoto nextrecordstop
+donerecordstop:
+;;;;;;;;;;;;;;;;;;;;;;;;
+iplaypartinstrument	init nstrnum("PlayPart")
+kwhen			init -1
+kduration		init -1
+nextplay:
+kplay			OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
+			if (kplay == 0) kgoto doneplay
+				printks "CSOUND: OSC message received on /playpart\n", 0
+				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber
+				kgoto nextplay
+doneplay:
 endin
 
-; instr Recorder is defined below everything else
-; due to csound's instr calculation precedence
-; ------------------------------------------
-
+turnon nstrnum("OSCListener")
 ; turn on master track
 turnon nstrnum("Master")
-; turn on OSC listeners
-turnon nstrnum("OSCLoadSampleIntoPartListener")
-turnon nstrnum("OSCPlayPartListener")
-turnon nstrnum("OSCRecordIntoPartListener")
 
 ; limit the allocations of Recorder to 1
 maxalloc "RecordIntoPart", 1
