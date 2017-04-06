@@ -78,7 +78,9 @@ nchnls	=	2
 ; [1-128] : Parts
 ; [129-132] : FXSends
 ; [133] : Master
-; [1000-1256] : Sample Ftables [mono pairs]
+; [134-N] : Sample Ftables [mono pairs]
+;
+; assuming MAX_NUMBER_OF_PARTS == 128
 ;
 ;
 ;
@@ -86,13 +88,12 @@ nchnls	=	2
 #define MAX_NUMBER_OF_PARTS		#128#
 #define MAX_NUMBER_OF_FX_SEND		#4#
 
+; ftable offset indices
 #define PART_FTABLE_OFFSET              #1#
 #define FX_SEND_FTABLE_OFFSET           #$MAX_NUMBER_OF_PARTS + 1#
 #define MASTER_FTABLE_OFFSET		#$MAX_NUMBER_OF_PARTS + $MAX_NUMBER_OF_FX_SEND + 1#
-#define SAMPLE_FTABLE_OFFSET            #1000#
+#define SAMPLE_FTABLE_OFFSET            #$MASTER_FTABLE_OFFSET + 1#
 
-#define PLAY_PART_INSTRUMENT_INDEX      #100#
-;
 ; master audio left & right
 gamastersigl		init 0
 gamastersigr		init 0
