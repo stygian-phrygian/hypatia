@@ -705,49 +705,60 @@ endin
 ; all the OSC listeners need to be in the same instrument
 ; lest we start getting weird timing issues.
 instr +OSCListener
-Sfilename		strcpy ""
-kpartnumber		init -1
-nextload:
-kload			OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
-			if (kload == 0) kgoto doneload
-						printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
-				Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
-						scoreline Sfstatement, 1
-						kgoto nextload
-doneload:
-;;;;;;;;;;;;;;;;;;;;;;;;
-kmode			init 0	; 0 - mastertrack, != 0 - audio_in
-kpartnumber		init 0
-krecorder		init nstrnum("RecordIntoPart")
-nextrecordstart:
-krecordstart		OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
-			if (krecordstart == 0) kgoto donerecordstart
-				; turn on the recorder
-				printks "CSOUND: started recording...\n", 0
-				event "i", krecorder, 0, -1, kmode, kpartnumber
-				kgoto nextrecordstart
-donerecordstart:
-;;;;;;;;;;;;;;;;;;;;;;;;
-kdummyvariable		init 0
-nextrecordstop:
-krecordstop		OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
-			if (krecordstop == 0) kgoto donerecordstop
-				; turn on the recorder
-				printks "CSOUND: stopped recording...\n", 0
-				turnoff2 krecorder, 0, 1
-				kgoto nextrecordstop
-donerecordstop:
-;;;;;;;;;;;;;;;;;;;;;;;;
-iplaypartinstrument	init nstrnum("PlayPart")
-kwhen			init -1
-kduration		init -1
-nextplay:
-kplay			OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
-			if (kplay == 0) kgoto doneplay
-				printks "CSOUND: OSC message received on /playpart\n", 0
-				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber
-				kgoto nextplay
-doneplay:
+
+Sscore		strcpy ""
+nextscore:
+kscorereceived	OSClisten giosclistenhandle, "/score", "s", Sscore
+		if (kscorereceived == 0) kgoto donescore
+			printks "OSC score message received:\n", 0
+			printks Sscore, 0
+			scoreline Sscore, 1
+			kgoto nextscore
+donescore:
+;
+;Sfilename		strcpy ""
+;kpartnumber		init -1
+;nextload:
+;kload			OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
+;			if (kload == 0) kgoto doneload
+;						printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
+;				Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
+;						scoreline Sfstatement, 1
+;						kgoto nextload
+;doneload:
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;kmode			init 0	; 0 - mastertrack, != 0 - audio_in
+;kpartnumber		init 0
+;krecorder		init nstrnum("RecordIntoPart")
+;nextrecordstart:
+;krecordstart		OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
+;			if (krecordstart == 0) kgoto donerecordstart
+;				; turn on the recorder
+;				printks "CSOUND: started recording...\n", 0
+;				event "i", krecorder, 0, -1, kmode, kpartnumber
+;				kgoto nextrecordstart
+;donerecordstart:
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;kdummyvariable		init 0
+;nextrecordstop:
+;krecordstop		OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
+;			if (krecordstop == 0) kgoto donerecordstop
+;				; turn on the recorder
+;				printks "CSOUND: stopped recording...\n", 0
+;				turnoff2 krecorder, 0, 1
+;				kgoto nextrecordstop
+;donerecordstop:
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;iplaypartinstrument	init nstrnum("PlayPart")
+;kwhen			init -1
+;kduration		init -1
+;nextplay:
+;kplay			OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
+;			if (kplay == 0) kgoto doneplay
+;				printks "CSOUND: OSC message received on /playpart\n", 0
+;				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber
+;				kgoto nextplay
+;doneplay:
 endin
 
 turnon nstrnum("OSCListener")
