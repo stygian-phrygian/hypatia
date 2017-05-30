@@ -785,6 +785,9 @@ endin
 ; DUE TO CSOUND DSP PRECEDENCE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+instr FXSend
+endin
+
 ; ------------------------------------------
 ; record audio from sources (master or audio input)
 ; critical to workflow (tweak - resample - repeat)
@@ -858,34 +861,48 @@ endin
 ;
 ; NB. I tried making seperate instruments which listened for seperate 
 ; "things" (ie. LoadSampleIntoPart, RecordIntoPart, PlayPart, etc) but 
-; this created very weird timing issues.  Therefore, there's now only
+; this created extremely weird timing issues.  Therefore, there's now only
 ; one OSC input port which listens for csound score data.
 instr +OSCScoreListener
 
-Sscore		strcpy ""
+Sscore			strcpy ""
 nextscore:
-kscorereceived	OSClisten giosclistenhandle, "/score", "s", Sscore
-		if (kscorereceived == 0) kgoto donescore
-			printks "OSC score message received:\n", 0
-			printks Sscore, 0
-			scoreline Sscore, 1
-			kgoto nextscore
+kscorereceived		OSClisten giosclistenhandle, "/score", "s", Sscore
+			if (kscorereceived == 0) kgoto donescore
+				printks "[OSC] received score:\n", 0
+				printks Sscore, 0
+				printks "\n", 0
+				scoreline Sscore, 1
+				kgoto nextscore
 donescore:
 endin
 
-; the following instrument turns on necessary instruments
-; as well as 
+; the following instrument turns on necessary performance instruments
+; as well as performs any other necessary initialization 
 instr BootUp
 
-; turn on osc score listener
-turnon nstrnum("OSCScoreListener")
-; turn on master track
-turnon nstrnum("Master")
+			; turn on our OSC score listener
+			turnon nstrnum("OSCScoreListener")
 
-; limit the allocations of Recorder to 1
-maxalloc "RecordIntoPart", 1
+			; turn on $MAX_NUMBER_OF_FX_SEND FXSend instruments
+			; and associate them with the proper ftables
+	ifxsendftable	init $FX_SEND_FTABLE_OFFSET
+	next_fxsend:
+			event_i "i", "FXSend", 0, -1, ifxsendftable
+	ifxsendftable	+= 1
+			if ( ifxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
+
+
+			; turn on the master
+			turnon nstrnum("Master")
+
+			; limit the allocations of Recorder to 1
+			maxalloc "RecordIntoPart", 1
+
+			turnoff
 
 endin
+turnon nstrnum("BootUp")
 
 
 
