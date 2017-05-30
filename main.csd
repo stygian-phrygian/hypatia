@@ -854,27 +854,13 @@ gamastersigr	= 0.0
 ;		zacl 0, ( 2 * $N_TRACKS ) 
 endin
 
+; instrument which listens for score data
 ;
-;
-; NB. These comments are now INVALID
-; Regarding the listener instruments below...
-; It's an awful nest of gotos down there.
-; There's a reason for this.
-; "if - endif" operates once per k-block *only* and
-; our Osclisten opcode can buffer multiple inputs per k-block.
-; *All* the inputs need to be processed lest you
-; run the risk of dropping possibly multiple Osclisten calls.
-; "if - kgoto" can operate multiple times per k-block for whatever reason.  
-; "if - goto" *doesn't* work, it has to be "if - kgoto"
-;
-; Yep.
-;
-; This language is shit.
-
-
-; all the OSC listeners need to be in the same instrument
-; lest we start getting weird timing issues.
-instr +OSCListener
+; NB. I tried making seperate instruments which listened for seperate 
+; "things" (ie. LoadSampleIntoPart, RecordIntoPart, PlayPart, etc) but 
+; this created very weird timing issues.  Therefore, there's now only
+; one OSC input port which listens for csound score data.
+instr +OSCScoreListener
 
 Sscore		strcpy ""
 nextscore:
@@ -885,58 +871,22 @@ kscorereceived	OSClisten giosclistenhandle, "/score", "s", Sscore
 			scoreline Sscore, 1
 			kgoto nextscore
 donescore:
-;
-;Sfilename		strcpy ""
-;kpartnumber		init -1
-;nextload:
-;kload			OSClisten giosclistenhandle, "/loadsampleintopart", "is", kpartnumber, Sfilename
-;			if (kload == 0) kgoto doneload
-;						printks "CSOUND: OSC message received on /loadsampleintopart\n", 0
-;				Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, kpartnumber, Sfilename
-;						scoreline Sfstatement, 1
-;						kgoto nextload
-;doneload:
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;kmode			init 0	; 0 - mastertrack, != 0 - audio_in
-;kpartnumber		init 0
-;krecorder		init nstrnum("RecordIntoPart")
-;nextrecordstart:
-;krecordstart		OSClisten giosclistenhandle, "/recordstart", "ii", kmode, kpartnumber
-;			if (krecordstart == 0) kgoto donerecordstart
-;				; turn on the recorder
-;				printks "CSOUND: started recording...\n", 0
-;				event "i", krecorder, 0, -1, kmode, kpartnumber
-;				kgoto nextrecordstart
-;donerecordstart:
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;kdummyvariable		init 0
-;nextrecordstop:
-;krecordstop		OSClisten giosclistenhandle, "/recordstop", "i", kdummyvariable
-;			if (krecordstop == 0) kgoto donerecordstop
-;				; turn on the recorder
-;				printks "CSOUND: stopped recording...\n", 0
-;				turnoff2 krecorder, 0, 1
-;				kgoto nextrecordstop
-;donerecordstop:
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;iplaypartinstrument	init nstrnum("PlayPart")
-;kwhen			init -1
-;kduration		init -1
-;nextplay:
-;kplay			OSClisten giosclistenhandle, "/playpart", "iff", kpartnumber, kwhen, kduration
-;			if (kplay == 0) kgoto doneplay
-;				printks "CSOUND: OSC message received on /playpart\n", 0
-;				event "i", iplaypartinstrument, kwhen, kduration, kpartnumber
-;				kgoto nextplay
-;doneplay:
 endin
 
-turnon nstrnum("OSCListener")
+; the following instrument turns on necessary instruments
+; as well as 
+instr BootUp
+
+; turn on osc score listener
+turnon nstrnum("OSCScoreListener")
 ; turn on master track
 turnon nstrnum("Master")
 
 ; limit the allocations of Recorder to 1
 maxalloc "RecordIntoPart", 1
+
+endin
+
 
 
 </CsInstruments>
