@@ -9,6 +9,12 @@
 ; It uses OSC for controlling all this (MIDI is fun but too limited)
 
 
+; THIS OSC NETOWORK IS INVALID NOW
+; there's only /score
+; which receives score data
+; the method below would be more elegant but it has timing issues
+;
+
 ; OSC NETWORK
 ; /loadsampleintopart [part# filename]
 ; /loadproject [directoryname]
@@ -33,8 +39,8 @@
 -odac
 
 ; realtime input (will need configuring)
-;-iadc
--iadc:hw:2,0 ; (my zoom h2n usb microphone)
+-iadc
+;-iadc:hw:2,0 ; (my zoom h2n usb microphone)
 
 </CsOptions>
 <CsInstruments>
@@ -59,8 +65,10 @@ nchnls	=	2
 ; sonic alteration (after the Part processes the audio).  Multiple
 ; parts can route the audio simultaneously to one.
 ; An FXSend is also an ftable.
+; The current DSP chain is: delay -> ringmod -> reverb -> bitcrusher -> compressor
 ;
-; All FXSends route to Master.
+; All FXSends route to Master.  Master also has DSP chain too.
+; The current DSP chain is: equalizer -> reverb -> compressor
 ;
 ; A project is a collection of sample files in a directory which
 ; this application knows how to reassign to Parts.
@@ -76,9 +84,9 @@ nchnls	=	2
 ;
 ; Ftable #:
 ; [1-128] : Parts
-; [129-132] : FXSends
-; [133] : Master
-; [134-N] : Sample Ftables [mono pairs]
+; [129-130] : FXSends
+; [131] : Master
+; [131-N] : Sample Ftables [mono pairs]
 ;
 ; assuming MAX_NUMBER_OF_PARTS == 128
 ;
@@ -86,7 +94,7 @@ nchnls	=	2
 ;
 ;
 #define MAX_NUMBER_OF_PARTS		#128#
-#define MAX_NUMBER_OF_FX_SEND		#4#
+#define MAX_NUMBER_OF_FX_SEND		#2#
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET              #1#
@@ -132,9 +140,47 @@ giosclistenhandle	OSCinit giosclistenport
 #define PART_ENV1_DEPTH			#23#
 #define PART_ENV1_DESTINATION		#24#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
-; fx bus state
+
+; fx send state
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND	#16#
-; fx bus parameter indices
+;
+#define FX_SEND_DELAY_LEFT_TIME			#0#
+#define FX_SEND_DELAY_LEFT_FEEDBACK		#1#
+#define FX_SEND_DELAY_RIGHT_TIME		#2#
+#define FX_SEND_DELAY_RIGHT_FEEDBACK		#3#
+#define FX_SEND_DELAY_WET			#4#
+#define FX_SEND_RING_MOD_FREQUENCY		#5#
+;
+#define FX_SEND_REVERB_ROOM_SIZE		#6#
+#define FX_SEND_REVERB_DAMPING			#7#
+#define FX_SEND_REVERB_WET			#8#
+#define FX_SEND_BIT_REDUCTION			#9#
+;
+#define FX_SEND_COMPRESSOR_RATIO		#10# 
+#define FX_SEND_COMPRESSOR_THRESHOLD		#11#
+#define FX_SEND_COMPRESSOR_ATTACK		#12#
+#define FX_SEND_COMPRESSOR_DECAY		#13#
+#define FX_SEND_SIDE_CHAIN_SOURCE		#14#
+#define FX_SEND_GAIN				#15#
+
+
+; master state 
+#define NUMBER_OF_PARAMETERS_PER_MASTER #16#
+;
+#define MASTER_EQ_GAIN_LOW		 #0#
+#define MASTER_EQ_GAIN_MID		 #1#
+#define MASTER_EQ_GAIN_HIGH		 #2#
+#define MASTER_EQ_GAIN_LOW_FREQUENCY	 #3#
+#define MASTER_EQ_GAIN_HIGH_FREQUENCY	 #4#
+#define MASTER_REVERB_ROOM_SIZE	         #5#
+#define MASTER_REVERB_DAMPING		 #6#
+#define MASTER_REVERB_WET		 #7#
+#define MASTER_BIT_REDUCTION		 #8#
+#define MASTER_COMPRESSOR_RATIO		 #9# 
+#define MASTER_COMPRESSOR_THRESHOLD	 #10#
+#define MASTER_COMPRESSOR_ATTACK	 #11#
+#define MASTER_COMPRESSOR_DECAY		 #12#
+#define MASTER_GAIN			 #13#
 
 instr InitializePart
 
@@ -187,6 +233,107 @@ instr CreateAllParts
 		
 endin
 turnon nstrnum("CreateAllParts")
+
+
+
+instr InitializeFXSend
+
+	iftablenumber	init p4
+			tabw_i 0, $FX_SEND_DELAY_LEFT_TIME, iftablenumber
+			tabw_i 0, $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
+			tabw_i 0, $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
+			tabw_i 0, $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
+			tabw_i 0, $FX_SEND_DELAY_WET, iftablenumber
+			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
+			;
+			tabw_i 0, $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
+			tabw_i 0, $FX_SEND_REVERB_DAMPING, iftablenumber
+			tabw_i 0, $FX_SEND_REVERB_WET, iftablenumber
+			tabw_i 0, $FX_SEND_BIT_REDUCTION, iftablenumber
+			;
+			tabw_i 0, $FX_SEND_COMPRESSOR_RATIO, iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_DECAY, iftablenumber
+			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
+			tabw_i 0, $FX_SEND_GAIN, iftablenumber
+			
+			prints "initialized FXSend on ftable # %d\n", iftablenumber
+
+			turnoff
+endin
+
+instr CreateFXSend
+
+irequestedftablenumber	init p4
+iftablesize		init $NUMBER_OF_PARAMETERS_PER_FX_SEND
+itime			init 0
+igenroutine		init 2
+
+			prints "requested allocation of a FXSend on ftable # %d\n", irequestedftablenumber
+icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0 ; <--- only one 0 is necessary apparently 
+			prints "allocated a FXSend on ftable # %d\n", icreatedftablenumber
+
+			event_i "i", "InitializeFXSend", 0, -1, icreatedftablenumber
+
+			turnoff
+
+endin
+
+instr CreateAllFXSends
+
+	ifxsend		init $FX_SEND_FTABLE_OFFSET
+	next_fxsend:
+			event_i "i", "CreateFXSend", 0, -1, ifxsend
+	ifxsend		+= 1
+			if ( ifxsend < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
+			turnoff
+		
+endin
+turnon nstrnum("CreateAllFXSends")
+
+
+
+instr InitializeMaster
+
+	iftablenumber	init p4
+			tabw_i 0, $MASTER_EQ_GAIN_LOW , iftablenumber
+			tabw_i 0, $MASTER_EQ_GAIN_MID , iftablenumber
+			tabw_i 0, $MASTER_EQ_GAIN_HIGH , iftablenumber
+			tabw_i 180, $MASTER_EQ_GAIN_LOW_FREQUENCY , iftablenumber
+			tabw_i 9000, $MASTER_EQ_GAIN_HIGH_FREQUENCY , iftablenumber
+			tabw_i 0.3, $MASTER_REVERB_ROOM_SIZE , iftablenumber
+			tabw_i 0.1, $MASTER_REVERB_DAMPING , iftablenumber
+			tabw_i 0, $MASTER_REVERB_WET , iftablenumber
+			tabw_i 0, $MASTER_BIT_REDUCTION , iftablenumber
+			tabw_i 0, $MASTER_COMPRESSOR_RATIO , iftablenumber
+			tabw_i 0, $MASTER_COMPRESSOR_THRESHOLD , iftablenumber
+			tabw_i 0, $MASTER_COMPRESSOR_ATTACK , iftablenumber
+			tabw_i 0, $MASTER_COMPRESSOR_DECAY , iftablenumber
+			tabw_i 1, $MASTER_GAIN , iftablenumber
+			
+			prints "initialized Master on ftable # %d\n", iftablenumber
+
+			turnoff
+endin
+
+instr CreateMaster
+
+irequestedftablenumber	init $MASTER_FTABLE_OFFSET
+iftablesize		init $NUMBER_OF_PARAMETERS_PER_MASTER
+itime			init 0
+igenroutine		init 2
+
+			prints "requested allocation of a Master on ftable # %d\n", irequestedftablenumber
+icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0 ; <--- only one 0 is necessary apparently 
+			prints "allocated a Master on ftable # %d\n", icreatedftablenumber
+
+			event_i "i", "InitializeMaster", 0, -1, icreatedftablenumber
+
+			turnoff
+
+endin
+turnon nstrnum("CreateMaster")
 
 instr +LoadSample
 ; args: ftable number, filename
@@ -363,11 +510,33 @@ kampattack, kampdecay, kampsustainlevel, kamprelease	xin
 						xout kampenvelope
 endop
 
-instr PartSet
-ipartnumber		init p4
+;
+;
+; Warning: the following do *no* bounds checking for invalid ftable numbers
+;
+;
+
+instr SetPartParameter
+ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
 ipartparameter		init p5
 iparametervalue		init p6
 			tabw_i iparametervalue, ipartparameter, ipartnumber
+			turnoff
+endin
+
+instr SetFXSendParameter
+iftablenumber		init p4 + $FX_SEND_FTABLE_OFFSET + 1	; 1 - $MAX_NUMBER_OF_FX_SEND
+iparameter		init p5
+iparametervalue		init p6
+			tabw_i iparametervalue, iparameter, iftablenumber
+			turnoff
+endin
+
+instr SetMasterParameter
+iftablenumber		init $MASTER_FTABLE_OFFSET 
+iparameter		init p4
+iparametervalue		init p5
+			tabw_i iparametervalue, iparameter, iftablenumber
 			turnoff
 endin
 
@@ -675,6 +844,7 @@ endin
 ; ------------------------------------------
 
 instr +Master
+
 ;		output to DAC
 		outs gamastersigl, gamastersigr
 ;		clear master channels for the next a-rate loop iteration to accumulate into
