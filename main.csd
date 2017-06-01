@@ -791,6 +791,8 @@ asigr			*= kampenvelope
 				;tabw asigr, $FX_SEND_INPUT_LEFT , kfxsendftable
 
 				; should probably cast kbusdestination to an integer...
+				; NB. this might be buggy due to the same shit we had to deal with
+				; in FXSend receiving on a zak channel
 				kleftzakchannel		= (kbusdestination - 1 ) * 2
 				krightzakchannel	= kleftzakchannel + 1
 				zaw asigl, kleftzakchannel
@@ -815,22 +817,35 @@ endin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 instr FXSend
-
 	iftablenumber	init p4
 
-			; conjure the correct zak channels to read a-rate data from
+			; conjure the correct zak channels to read a-rate data from PlayPart
 			; based off of the ftable we are provided
-ileftzakchannel		= ( iftablenumber - $FX_SEND_FTABLE_OFFSET ) * 2
+			;
+			; FOR SOME FUCKING REASON BECAUSE THIS LANGUAGE IS BUGGY ELEPHANT-SHIT
+			; (atleast on Ubuntu)
+			; We can't write ileftzakchannel = 2 * (iftablenumber - $FX_SEND_FTABLE_OFFSET)
+			; NOPE, csound can't handle macros in algebraic expressions... Iunno man.
+			; Therefore, I'm obligated to assign the macro $FX_SEND_FTABLE_OFFSET 
+			; to the i-time variable ifxsendftableoffset
+			; just so it won't fuck up the fucking parser.
+			; That's an hour of my life I won't get back chasing down this stupid bug.
+			; FUCK YOU.
+			;
+ifxsendftableoffset	= $FX_SEND_FTABLE_OFFSET 
+ileftzakchannel		= 2 * (iftablenumber - ifxsendftableoffset)
 irightzakchannel	= ileftzakchannel + 1
+			; debugging
+			;prints "FX_SEND_FTABLE_OFFSET: %f\n", $FX_SEND_FTABLE_OFFSET 
+			;prints "iftablenumber: %f\n", iftablenumber
+			;prints "ileftzakchannel: %f\n", ileftzakchannel
+			;prints "irightzakchannel: %f\n", irightzakchannel
+			;prints "\n\n"
 
 			; read in audio input
 asigl			zar ileftzakchannel
 asigr			zar irightzakchannel
 
-			prints "FX_SEND_FTABLE_OFFSET: %f\n", $FX_SEND_FTABLE_OFFSET 
-			prints "\n\niftablenumber: %f\n", iftablenumber
-			prints "ileftzakchannel: %f\n", ileftzakchannel
-			prints "irightzakchannel: %f\n", irightzakchannel
 
 
 			; read the ftable associated with this FXSend
