@@ -104,6 +104,11 @@ nchnls	=	2
 #define MASTER_FTABLE_OFFSET		#$MAX_NUMBER_OF_PARTS + $MAX_NUMBER_OF_FX_SEND + 1#
 #define SAMPLE_FTABLE_OFFSET            #$MASTER_FTABLE_OFFSET + 1#
 
+; zak busses (for routing a-rate data out of PlayPart into FXSend)
+#define NUMBER_OF_ZAK_AUDIO_CHANNELS	#2 * $MAX_NUMBER_OF_FX_SEND#
+#define zak_dummy_variable #2#
+zakinit $NUMBER_OF_ZAK_AUDIO_CHANNELS , $zak_dummy_variable 
+
 ; master audio left & right
 gamastersigl		init 0
 gamastersigr		init 0
@@ -113,10 +118,6 @@ giosclistenport		init 5000
 gioscsendport		init 5001
 giosclistenhandle	OSCinit giosclistenport
 
-; zak busses (for routing a-rate data out of PlayPart into FXSend)
-#define NUMBER_OF_ZAK_AUDIO_CHANNELS	#2 * $MAX_NUMBER_OF_FX_SEND#
-#define zak_dummy_variable #2#
-zakinit $NUMBER_OF_ZAK_AUDIO_CHANNELS , $zak_dummy_variable 
 
 ; part state
 #define NUMBER_OF_PARAMETERS_PER_PART	#32#
@@ -252,24 +253,24 @@ instr InitializeFXSend
 			tabw_i 0, $FX_SEND_INPUT_LEFT, iftablenumber
 			tabw_i 0, $FX_SEND_INPUT_RIGHT, iftablenumber
 			;
-			tabw_i 0, $FX_SEND_DELAY_LEFT_TIME, iftablenumber
-			tabw_i 0, $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
-			tabw_i 0, $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
-			tabw_i 0, $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
+			tabw_i 0.1, $FX_SEND_DELAY_LEFT_TIME, iftablenumber
+			tabw_i 0.2, $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
+			tabw_i 0.2, $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
+			tabw_i 0.4, $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
 			tabw_i 0, $FX_SEND_DELAY_WET, iftablenumber
 			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
 			;
-			tabw_i 0, $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
-			tabw_i 0, $FX_SEND_REVERB_DAMPING, iftablenumber
+			tabw_i 0.3, $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
+			tabw_i 0.3, $FX_SEND_REVERB_DAMPING, iftablenumber
 			tabw_i 0, $FX_SEND_REVERB_WET, iftablenumber
 			tabw_i 0, $FX_SEND_BIT_REDUCTION, iftablenumber
 			;
 			tabw_i 0, $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
-			tabw_i 0, $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
-			tabw_i 0, $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
+			tabw_i 0.1, $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
+			tabw_i 0.2, $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
 			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
-			tabw_i 0, $FX_SEND_GAIN, iftablenumber
+			tabw_i 1, $FX_SEND_GAIN, iftablenumber
 			
 			prints "initialized FXSend on ftable # %d\n", iftablenumber
 
@@ -790,6 +791,9 @@ asigr			*= kampenvelope
 				krightzakchannel	= kleftzakchannel + 1
 				zaw asigl, kleftzakchannel
 				zaw asigr, krightzakchannel
+				;asigl_ zar kleftzakchannel
+				;asigr_ zar krightzakchannel
+				;outs asigl_, asigr_
 			else
 				gamastersigl += asigl
 				gamastersigr += asigr
@@ -803,7 +807,7 @@ endin
 ; DUE TO CSOUND DSP PRECEDENCE            ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-instr FXSend
+instr +FXSend
 	iftablenumber	init p4
 
 			; conjure the correct zak channels to read a-rate data from PlayPart
@@ -817,12 +821,16 @@ instr FXSend
 			; So once again.
 			; DO NOT remove ifxsendftableoffset
 ifxsendftableoffset	= $FX_SEND_FTABLE_OFFSET 
-ileftzakchannel		= 2 * (iftablenumber - ifxsendftableoffset)
-irightzakchannel	= ileftzakchannel + 1
+kleftzakchannel		init 2 * (iftablenumber - ifxsendftableoffset)
+krightzakchannel	init i(kleftzakchannel) + 1
 
 			; read in audio input
-asigl			zar ileftzakchannel
-asigr			zar irightzakchannel
+asigl			zar kleftzakchannel
+asigr			zar krightzakchannel
+
+		; testing
+		outs asigl, asigr
+
 
 			; read the ftable associated with this FXSend
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
@@ -925,7 +933,6 @@ asigl		*= kgain
 asigr		*= kgain
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;		accumulate into master
 gamastersigl	+= asigl
