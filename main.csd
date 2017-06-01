@@ -62,12 +62,13 @@ nchnls	=	2
 ; A part is an ftable.
 ;
 ; An FXSend represents a group of parameters relevant for further
-; sonic alteration (after the Part processes the audio).  Multiple
+; sonic alteration (after the Part processes the audio). In other words,
+; it's an effect bus common to most analog mixers.  Multiple
 ; parts can route the audio simultaneously to one.
-; An FXSend is also an ftable.
+; An FXSend instrument has a corresponding ftable to hold its state.
 ; The current DSP chain is: delay -> ringmod -> reverb -> bitcrusher -> compressor
 ;
-; All FXSends route to Master.  Master also has DSP chain too.
+; All FXSends route to Master.  Master also has a DSP chain too.
 ; The current DSP chain is: equalizer -> reverb -> compressor
 ;
 ; A project is a collection of sample files in a directory which
@@ -83,16 +84,17 @@ nchnls	=	2
 ; in memory thusly:
 ;
 ; Ftable #:
-; [1-128] : Parts
+; [1-128]   : Parts
 ; [129-130] : FXSends
-; [131] : Master
-; [131-N] : Sample Ftables [mono pairs]
+; [131]     : Master
+; [131-N]   : Sample Ftables [mono pairs]
 ;
 ; assuming MAX_NUMBER_OF_PARTS == 128
+;	   MAX_NUMBER_OF_FX_SEND == 2
 ;
 ;
-;
-;
+
+
 #define MAX_NUMBER_OF_PARTS		#128#
 #define MAX_NUMBER_OF_FX_SEND		#2#
 
@@ -110,6 +112,10 @@ gamastersigr		init 0
 giosclistenport		init 5000
 gioscsendport		init 5001
 giosclistenhandle	OSCinit giosclistenport
+
+; zak busses (for routing a-rate data out of PlayPart into FXSend)
+#define zak_dummy_variable #2#
+zakinit ( 2 * $MAX_NUMBER_OF_FX_SEND ), $zak_dummy_variable 
 
 ; part state
 #define NUMBER_OF_PARAMETERS_PER_PART	#32#
@@ -142,26 +148,29 @@ giosclistenhandle	OSCinit giosclistenport
 
 
 ; fx send state
-#define NUMBER_OF_PARAMETERS_PER_FX_SEND	#16#
+#define NUMBER_OF_PARAMETERS_PER_FX_SEND	#32#
 ;
-#define FX_SEND_DELAY_LEFT_TIME			#0#
-#define FX_SEND_DELAY_LEFT_FEEDBACK		#1#
-#define FX_SEND_DELAY_RIGHT_TIME		#2#
-#define FX_SEND_DELAY_RIGHT_FEEDBACK		#3#
-#define FX_SEND_DELAY_WET			#4#
-#define FX_SEND_RING_MOD_FREQUENCY		#5#
+#define FX_SEND_INPUT_LEFT			#0# ; <--- currently unused (due to zak channel implementation below)
+#define FX_SEND_INPUT_RIGHT			#1# ; <---
 ;
-#define FX_SEND_REVERB_ROOM_SIZE		#6#
-#define FX_SEND_REVERB_DAMPING			#7#
-#define FX_SEND_REVERB_WET			#8#
-#define FX_SEND_BIT_REDUCTION			#9#
+#define FX_SEND_DELAY_LEFT_TIME			#2#
+#define FX_SEND_DELAY_LEFT_FEEDBACK		#3#
+#define FX_SEND_DELAY_RIGHT_TIME		#4#
+#define FX_SEND_DELAY_RIGHT_FEEDBACK		#5#
+#define FX_SEND_DELAY_WET			#6#
+#define FX_SEND_RING_MOD_FREQUENCY		#7#
 ;
-#define FX_SEND_COMPRESSOR_RATIO		#10# 
-#define FX_SEND_COMPRESSOR_THRESHOLD		#11#
-#define FX_SEND_COMPRESSOR_ATTACK		#12#
-#define FX_SEND_COMPRESSOR_DECAY		#13#
-#define FX_SEND_SIDE_CHAIN_SOURCE		#14#
-#define FX_SEND_GAIN				#15#
+#define FX_SEND_REVERB_ROOM_SIZE		#8#
+#define FX_SEND_REVERB_DAMPING			#9#
+#define FX_SEND_REVERB_WET			#10#
+#define FX_SEND_BIT_REDUCTION			#11#
+;
+#define FX_SEND_COMPRESSOR_RATIO		#12# 
+#define FX_SEND_COMPRESSOR_THRESHOLD		#13#
+#define FX_SEND_COMPRESSOR_ATTACK		#14#
+#define FX_SEND_COMPRESSOR_RELEASE		#15#
+#define FX_SEND_SIDE_CHAIN_SOURCE		#16#
+#define FX_SEND_GAIN				#17#
 
 
 ; master state 
@@ -179,7 +188,7 @@ giosclistenhandle	OSCinit giosclistenport
 #define MASTER_COMPRESSOR_RATIO		 #9# 
 #define MASTER_COMPRESSOR_THRESHOLD	 #10#
 #define MASTER_COMPRESSOR_ATTACK	 #11#
-#define MASTER_COMPRESSOR_DECAY		 #12#
+#define MASTER_COMPRESSOR_RELEASE	 #12#
 #define MASTER_GAIN			 #13#
 
 instr InitializePart
@@ -239,6 +248,9 @@ turnon nstrnum("CreateAllParts")
 instr InitializeFXSend
 
 	iftablenumber	init p4
+			tabw_i 0, $FX_SEND_INPUT_LEFT, iftablenumber
+			tabw_i 0, $FX_SEND_INPUT_RIGHT, iftablenumber
+			;
 			tabw_i 0, $FX_SEND_DELAY_LEFT_TIME, iftablenumber
 			tabw_i 0, $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
 			tabw_i 0, $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
@@ -254,7 +266,7 @@ instr InitializeFXSend
 			tabw_i 0, $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
 			tabw_i 0, $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
-			tabw_i 0, $FX_SEND_COMPRESSOR_DECAY, iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
 			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
 			tabw_i 0, $FX_SEND_GAIN, iftablenumber
 			
@@ -309,7 +321,7 @@ instr InitializeMaster
 			tabw_i 0, $MASTER_COMPRESSOR_RATIO , iftablenumber
 			tabw_i 0, $MASTER_COMPRESSOR_THRESHOLD , iftablenumber
 			tabw_i 0, $MASTER_COMPRESSOR_ATTACK , iftablenumber
-			tabw_i 0, $MASTER_COMPRESSOR_DECAY , iftablenumber
+			tabw_i 0, $MASTER_COMPRESSOR_RELEASE , iftablenumber
 			tabw_i 1, $MASTER_GAIN , iftablenumber
 			
 			prints "initialized Master on ftable # %d\n", iftablenumber
@@ -764,18 +776,35 @@ asigr			*= kampenvelope
 				asigr	distort1 asigr, kdistortionamount * $MAX_DISTORTION , 1, 1, 0
 			endif
 
-			; output on one of the tracks (...really zak channels)
-			; zawm asigl, ichanl
-			; zawm asigr, ichanr
-			; gamastertrackl += asigl
-			; gamastertrackr += asigr
+			; output on either master or one of the fxsends
+			; kbusdestination <  1         ---> master
+			; kbusdestination >= 1 & < 2   ---> fxsend 1
+			; kbusdestination >= 2 & < 3   ---> fxsend 2
+			; etc...
+			if(kbusdestination >= 1) then
+				; NB. can't use the commented code below because 'tabw's 3rd argument 
+				; only operates at i-rate (and we need k-rate)
+				; hence we have to resort to zak channels
+				;
+				;kfxsendftable = $FX_SEND_FTABLE_OFFSET + kbusdestination - 1
+				;tabw asigl, $FX_SEND_INPUT_LEFT , kfxsendftable
+				;tabw asigr, $FX_SEND_INPUT_LEFT , kfxsendftable
+
+				; should probably cast kbusdestination to an integer...
+				kleftzakchannel		= (kbusdestination - 1 ) * 2
+				krightzakchannel	= kleftzakchannel + 1
+				zaw asigl, kleftzakchannel
+				zaw asigr, krightzakchannel
+			else
+				gamastersigr += asigl
+				gamastersigr += asigr
+				
+			endif
 
 
 			; just testing right now
 			; output with 'outs' opcode
-
-
-			outs asigl, asigr
+			; outs asigl, asigr
 
 endin
 
@@ -786,6 +815,133 @@ endin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 instr FXSend
+
+	iftablenumber	init p4
+
+			; conjure the correct zak channels to read a-rate data from
+			; based off of the ftable we are provided
+ileftzakchannel		= ( iftablenumber - $FX_SEND_FTABLE_OFFSET ) * 2
+irightzakchannel	= ileftzakchannel + 1
+
+			; read in audio input
+asigl			zar ileftzakchannel
+asigr			zar irightzakchannel
+
+			prints "FX_SEND_FTABLE_OFFSET: %f\n", $FX_SEND_FTABLE_OFFSET 
+			prints "\n\niftablenumber: %f\n", iftablenumber
+			prints "ileftzakchannel: %f\n", ileftzakchannel
+			prints "irightzakchannel: %f\n", irightzakchannel
+
+
+			; read the ftable associated with this FXSend
+kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
+kdelayleftfeedback	tab $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
+kdelayrighttime		tab $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
+kdelayrightfeedback	tab $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
+kdelaywet		tab $FX_SEND_DELAY_WET, iftablenumber
+kringmodfrequency	tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
+			;
+kreverbroomsize		tab $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
+kreverbdamping		tab $FX_SEND_REVERB_DAMPING, iftablenumber
+kreverbwet		tab $FX_SEND_REVERB_WET, iftablenumber
+kbitreduction		tab $FX_SEND_BIT_REDUCTION, iftablenumber
+			;
+kcompressorratio	tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
+kcompressorthreshold	tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
+kcompressorattack	tab $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
+kcompressorrelease	tab $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
+kcompressorsidechainsource	tab $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
+kgain			tab $FX_SEND_GAIN, iftablenumber
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ring modulation
+;
+if (kringmodfrequency > 0) then
+	amodband	oscil 1, kringmodfrequency, -1, 0.0
+	asigl		*= amodband
+	asigr		*= amodband
+endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; delay 
+;
+#define 	MAX_DELAY_TIME #1.0#
+;
+;		left channel delay
+adelaybufferl	delayr $MAX_DELAY_TIME 
+asigdelayl	deltapi kdelaylefttime
+		delayw asigl + (asigdelayl * kdelayleftfeedback)
+;
+;		right channel delay
+adelaybufferr	delayr $MAX_DELAY_TIME 
+asigdelayr	deltapi kdelayrighttime
+		delayw asigr + (asigdelayr * kdelayrightfeedback)
+;
+;		delay wetness
+kdelaydry	= (1 - kdelaywet)
+asigl		= (kdelaydry * asigl) + (kdelaywet * asigdelayl)
+asigr		= (kdelaydry * asigr) + (kdelaywet * asigdelayr)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; reverb
+;
+; duplicate signals for denorm opcode (denorm improves efficiency)
+asigreverbinl			= asigl
+asigreverbinr			= asigr
+				denorm asigreverbinl, asigreverbinr
+;
+asigreverboutl, asigreverboutr	reverbsc asigreverbinl, asigreverbinr, kreverbroomsize, kreverbdamping
+;asigreverboutl, asigreverboutr	freeverb asigreverbinl, asigreverbinr, kreverbroomsize, kreverbdamping
+
+; reverb wetness
+kreverbdry	= (1.0 - kreverbwet)
+asigl		= (kreverbdry * asigl) + (kreverbwet * asigreverboutl)
+asigr		= (kreverbdry * asigr) + (kreverbwet * asigreverboutr)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; bitcrusher
+;
+; adapted from LoFi.csd found here:
+; http://iainmccurdy.org/csound.html
+;
+if (kbitreduction > 0) then 
+	k_bitdepth	= 16 - kbitreduction		; 0 -> 16  , 16 -> 1 
+	k_values	pow 2, k_bitdepth
+	asigl		= (int((asigl/0dbfs)*k_values))/k_values
+	asigr		= (int((asigr/0dbfs)*k_values))/k_values
+endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; compressor/limiter/ducker
+;
+#define LOWKNEE 	#48#		; * hard knee only *
+#define HIGHKNEE	#48#		;
+if (kcompressorratio >= 1) then
+	; compress it
+	asigl	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+	asigr	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+	; apply post gain
+	;asigl	*= kcompressorpostgain
+	;asigr	*= kcompressorpostgain
+endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; gain
+;
+asigl		*= kgain
+asigr		*= kgain
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; clip...  everything?
+
+; shouldn't this be in the master track
+;asigl		clip asigl, 2, 1.0
+;asigr		clip asigr, 2, 1.0
+
+;		accumulate to master track
+gamastersigl	+= asigl
+gamastersigr	+= asigr
+
 endin
 
 ; ------------------------------------------
