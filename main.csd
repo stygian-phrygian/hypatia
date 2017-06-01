@@ -782,17 +782,9 @@ asigr			*= kampenvelope
 			; kbusdestination >= 2 & < 3   ---> fxsend 2
 			; etc...
 			if(kbusdestination >= 1) then
-				; NB. can't use the commented code below because 'tabw's 3rd argument 
+				; NB. can't use 'tabw' because its 3rd argument 
 				; only operates at i-rate (and we need k-rate)
 				; hence we have to resort to zak channels
-				;
-				;kfxsendftable = $FX_SEND_FTABLE_OFFSET + kbusdestination - 1
-				;tabw asigl, $FX_SEND_INPUT_LEFT , kfxsendftable
-				;tabw asigr, $FX_SEND_INPUT_LEFT , kfxsendftable
-
-				; should probably cast kbusdestination to an integer...
-				; NB. this might be buggy due to the same shit we had to deal with
-				; in FXSend receiving on a zak channel
 				kleftzakchannel		= (kbusdestination - 1 ) * 2
 				krightzakchannel	= kleftzakchannel + 1
 				zaw asigl, kleftzakchannel
@@ -802,19 +794,13 @@ asigr			*= kampenvelope
 				gamastersigr += asigr
 				
 			endif
-
-
-			; just testing right now
-			; output with 'outs' opcode
-			; outs asigl, asigr
-
 endin
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; FX TRACK PROCESSING GOES HERE
-; DUE TO CSOUND DSP PRECEDENCE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; FX TRACK PROCESSING GOES HERE AND BELOW ;
+; DUE TO CSOUND DSP PRECEDENCE            ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 instr FXSend
 	iftablenumber	init p4
@@ -828,25 +814,17 @@ instr FXSend
 			; NOPE, csound can't handle macros in algebraic expressions... Iunno man.
 			; Therefore, I'm obligated to assign the macro $FX_SEND_FTABLE_OFFSET 
 			; to the i-time variable ifxsendftableoffset
-			; just so it won't fuck up the fucking parser.
+			; JUST so it won't fuck up the fucking parser.
 			; That's an hour of my life I won't get back chasing down this stupid bug.
 			; FUCK YOU.
 			;
 ifxsendftableoffset	= $FX_SEND_FTABLE_OFFSET 
 ileftzakchannel		= 2 * (iftablenumber - ifxsendftableoffset)
 irightzakchannel	= ileftzakchannel + 1
-			; debugging
-			;prints "FX_SEND_FTABLE_OFFSET: %f\n", $FX_SEND_FTABLE_OFFSET 
-			;prints "iftablenumber: %f\n", iftablenumber
-			;prints "ileftzakchannel: %f\n", ileftzakchannel
-			;prints "irightzakchannel: %f\n", irightzakchannel
-			;prints "\n\n"
 
 			; read in audio input
 asigl			zar ileftzakchannel
 asigr			zar irightzakchannel
-
-
 
 			; read the ftable associated with this FXSend
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
@@ -867,6 +845,8 @@ kcompressorattack	tab $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
 kcompressorrelease	tab $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
 kcompressorsidechainsource	tab $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
 kgain			tab $FX_SEND_GAIN, iftablenumber
+
+; apply effects now
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ring modulation
@@ -947,13 +927,9 @@ asigl		*= kgain
 asigr		*= kgain
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; clip...  everything?
 
-; shouldn't this be in the master track
-;asigl		clip asigl, 2, 1.0
-;asigr		clip asigr, 2, 1.0
 
-;		accumulate to master track
+;		accumulate into master
 gamastersigl	+= asigl
 gamastersigr	+= asigr
 
@@ -1016,16 +992,20 @@ Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ss
 endin
 
 ; ------------------------------------------
-
 instr +Master
-
-;		output to DAC
+		; clip everything
+gamastersigl	clip gamastersigl, 2, 1.0
+gamastersigr	clip gamastersigr, 2, 1.0
+		;
+		; output to DAC
 		outs gamastersigl, gamastersigr
-;		clear master channels for the next a-rate loop iteration to accumulate into
+		;
+		; clear master channels for the next a-rate loop iteration to accumulate into
 gamastersigl	= 0.0
 gamastersigr	= 0.0
-;		clear zak channels for the next a-rate loop iteration to write into
-;		zacl 0, ( 2 * $N_TRACKS ) 
+		; clear zak channels for the next a-rate loop iteration to write into
+		; (is this necessary?)
+		zacl 0, ( 2 * $N_TRACKS ) 
 endin
 
 ; instrument which listens for score data
