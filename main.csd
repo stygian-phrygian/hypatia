@@ -791,7 +791,7 @@ asigr			*= kampenvelope
 				zaw asigl, kleftzakchannel
 				zaw asigr, krightzakchannel
 			else
-				gamastersigr += asigl
+				gamastersigl += asigl
 				gamastersigr += asigr
 				
 			endif
@@ -1117,7 +1117,6 @@ instr BootUp
 			event_i "i", "FXSend", 0, -1, ifxsendftable
 	ifxsendftable	+= 1
 			if ( ifxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
-
 
 			; turn on the master
 			turnon nstrnum("Master")
