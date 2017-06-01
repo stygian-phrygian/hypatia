@@ -789,8 +789,8 @@ asigr			*= kampenvelope
 				; hence we have to resort to zak channels
 				kleftzakchannel		= (kbusdestination - 1 ) * 2
 				krightzakchannel	= kleftzakchannel + 1
-				zaw asigl, kleftzakchannel
-				zaw asigr, krightzakchannel
+				zawm asigl, kleftzakchannel
+				zawm asigr, krightzakchannel
 				;asigl_ zar kleftzakchannel
 				;asigr_ zar krightzakchannel
 				;outs asigl_, asigr_
@@ -808,6 +808,7 @@ endin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 instr +FXSend
+
 	iftablenumber	init p4
 
 			; conjure the correct zak channels to read a-rate data from PlayPart
@@ -820,13 +821,13 @@ instr +FXSend
 			; Errors which I thought were the fault of csound and spent an hour debugging.
 			; So once again.
 			; DO NOT remove ifxsendftableoffset
-ifxsendftableoffset	= $FX_SEND_FTABLE_OFFSET 
-kleftzakchannel		init 2 * (iftablenumber - ifxsendftableoffset)
-krightzakchannel	init i(kleftzakchannel) + 1
+ifxsendftableoffset	init $FX_SEND_FTABLE_OFFSET 
+ileftzakchannel		init 2 * (iftablenumber - ifxsendftableoffset)
+irightzakchannel	init ileftzakchannel + 1
 
 			; read in audio input
-asigl			zar kleftzakchannel
-asigr			zar krightzakchannel
+asigl			zar ileftzakchannel
+asigr			zar irightzakchannel
 
 		; testing
 		outs asigl, asigr
