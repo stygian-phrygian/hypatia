@@ -114,8 +114,9 @@ gioscsendport		init 5001
 giosclistenhandle	OSCinit giosclistenport
 
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
+#define NUMBER_OF_ZAK_AUDIO_CHANNELS	#2 * $MAX_NUMBER_OF_FX_SEND#
 #define zak_dummy_variable #2#
-zakinit ( 2 * $MAX_NUMBER_OF_FX_SEND ), $zak_dummy_variable 
+zakinit $NUMBER_OF_ZAK_AUDIO_CHANNELS , $zak_dummy_variable 
 
 ; part state
 #define NUMBER_OF_PARAMETERS_PER_PART	#32#
@@ -808,16 +809,13 @@ instr FXSend
 			; conjure the correct zak channels to read a-rate data from PlayPart
 			; based off of the ftable we are provided
 			;
-			; FOR SOME FUCKING REASON BECAUSE THIS LANGUAGE IS BUGGY ELEPHANT-SHIT
-			; (atleast on Ubuntu)
-			; We can't write ileftzakchannel = 2 * (iftablenumber - $FX_SEND_FTABLE_OFFSET)
-			; NOPE, csound can't handle macros in algebraic expressions... Iunno man.
-			; Therefore, I'm obligated to assign the macro $FX_SEND_FTABLE_OFFSET 
-			; to the i-time variable ifxsendftableoffset
-			; JUST so it won't fuck up the fucking parser.
-			; That's an hour of my life I won't get back chasing down this stupid bug.
-			; FUCK YOU.
-			;
+			; DO NOT remove ifxsendftableoffset
+			; I know it looks tempting to just use the macro itself in the expression
+			; for ileftzakchannel.  Do not do it.  It will segfault (not sure why),
+			; or it will produce weird arithmetic errors due to dumb macro expansion.
+			; Errors which I thought were the fault of csound and spent an hour debugging.
+			; So once again.
+			; DO NOT remove ifxsendftableoffset
 ifxsendftableoffset	= $FX_SEND_FTABLE_OFFSET 
 ileftzakchannel		= 2 * (iftablenumber - ifxsendftableoffset)
 irightzakchannel	= ileftzakchannel + 1
@@ -993,19 +991,96 @@ endin
 
 ; ------------------------------------------
 instr +Master
-		; clip everything
-gamastersigl	clip gamastersigl, 2, 1.0
-gamastersigr	clip gamastersigr, 2, 1.0
-		;
-		; output to DAC
-		outs gamastersigl, gamastersigr
-		;
-		; clear master channels for the next a-rate loop iteration to accumulate into
-gamastersigl	= 0.0
-gamastersigr	= 0.0
-		; clear zak channels for the next a-rate loop iteration to write into
-		; (is this necessary?)
-		zacl 0, ( 2 * $N_TRACKS ) 
+				; find which ftable master is
+iftablenumber			init $MASTER_FTABLE_OFFSET
+				; read master state
+kmastereqgainlow		tab $MASTER_EQ_GAIN_LOW, iftablenumber
+kmastereqgainmid		tab $MASTER_EQ_GAIN_MID, iftablenumber
+kmastereqgainhigh		tab $MASTER_EQ_GAIN_HIGH, iftablenumber
+kmastereqgainlowfrequency	tab $MASTER_EQ_GAIN_LOW_FREQUENCY, iftablenumber
+kmastereqgainhighfrequency	tab $MASTER_EQ_GAIN_HIGH_FREQUENCY, iftablenumber
+kmasterreverbroomsize		tab $MASTER_REVERB_ROOM_SIZE, iftablenumber
+kmasterreverbdamping		tab $MASTER_REVERB_DAMPING, iftablenumber
+kmasterreverbwet		tab $MASTER_REVERB_WET, iftablenumber
+kmasterbitreduction		tab $MASTER_BIT_REDUCTION, iftablenumber
+kmastercompressorratio		tab $MASTER_COMPRESSOR_RATIO, iftablenumber
+kmastercompressorthreshold	tab $MASTER_COMPRESSOR_THRESHOLD, iftablenumber
+kmastercompressorattack		tab $MASTER_COMPRESSOR_ATTACK, iftablenumber
+kmastercompressorrelease	tab $MASTER_COMPRESSOR_RELEASE, iftablenumber
+kmastergain			tab $MASTER_GAIN, iftablenumber
+
+
+; apply effects now
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; eq
+;
+
+;TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; reverb
+;
+; duplicate signals for denorm opcode (denorm improves efficiency)
+amastersigreverbinl				= gamastersigl
+amastersigreverbinr				= gamastersigr
+						denorm amastersigreverbinl, amastersigreverbinr
+;
+amastersigreverboutl, amastersigreverboutr	reverbsc amastersigreverbinl, amastersigreverbinr, kmasterreverbroomsize, kmasterreverbdamping
+;
+; reverb wetness
+kmasterreverbdry				= (1.0 - kmasterreverbwet)
+gamastersigl					= (kmasterreverbdry * gamastersigl) + (kmasterreverbwet * amastersigreverboutl)
+gamastersigr					= (kmasterreverbdry * gamastersigr) + (kmasterreverbwet * amastersigreverboutr)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; bitcrusher
+;
+; adapted from LoFi.csd found here:
+; http://iainmccurdy.org/csound.html
+;
+if (kmasterbitreduction > 0) then 
+	k_bitdepth	= 16 - kmasterbitreduction		; 0 -> 16  , 16 -> 1 
+	k_values	pow 2, k_bitdepth
+	gamastersigl	= (int((gamastersigl/0dbfs)*k_values))/k_values
+	gamastersigr	= (int((gamastersigr/0dbfs)*k_values))/k_values
+endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; compressor/limiter/ducker
+;
+#define LOWKNEE 	#48#		; * hard knee only *
+#define HIGHKNEE	#48#		;
+if (kmastercompressorratio >= 1) then
+	; compress it
+	gamastersigl	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
+	gamastersigr	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
+endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; gain
+;
+gamastersigl		*= kmastergain
+gamastersigr		*= kmastergain
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+			; clip everything
+gamastersigl		clip gamastersigl, 2, 1.0
+gamastersigr		clip gamastersigr, 2, 1.0
+;
+			; output to DAC
+			outs gamastersigl, gamastersigr
+;
+			; clear master channels for the next a-rate loop iteration to accumulate into
+gamastersigl		= 0.0
+gamastersigr		= 0.0
+			; clear zak channels for the next a-rate loop iteration to write into
+			; (is this necessary?)
+inumberofzakaudiochannels = $NUMBER_OF_ZAK_AUDIO_CHANNELS	; <--- if we don't do this
+								; macro expansion will create weird errors
+			zacl 0, inumberofzakaudiochannels  
 endin
 
 ; instrument which listens for score data
