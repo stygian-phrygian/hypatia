@@ -95,7 +95,7 @@ nchnls	=	2
 ;
 
 
-#define MAX_NUMBER_OF_PARTS		#128#
+#define MAX_NUMBER_OF_PARTS		#8#
 #define MAX_NUMBER_OF_FX_SEND		#2#
 
 ; ftable offset indices
@@ -106,7 +106,7 @@ nchnls	=	2
 
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
 #define NUMBER_OF_ZAK_AUDIO_CHANNELS	#2 * $MAX_NUMBER_OF_FX_SEND#
-#define zak_dummy_variable #2#
+#define zak_dummy_variable #$NUMBER_OF_ZAK_AUDIO_CHANNELS#
 zakinit $NUMBER_OF_ZAK_AUDIO_CHANNELS , $zak_dummy_variable 
 
 ; master audio left & right
@@ -529,6 +529,10 @@ endop
 ; Warning: the following do *no* bounds checking for invalid ftable numbers
 ;
 ;
+;
+;opcode route_to_fx_send, ak 
+;				setksmps 1
+;endop
 
 instr SetPartParameter
 ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
@@ -828,10 +832,6 @@ irightzakchannel	init ileftzakchannel + 1
 			; read in audio input
 asigl			zar ileftzakchannel
 asigr			zar irightzakchannel
-
-		; testing
-		outs asigl, asigr
-
 
 			; read the ftable associated with this FXSend
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
