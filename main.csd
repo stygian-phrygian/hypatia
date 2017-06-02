@@ -255,9 +255,9 @@ instr +InitializeFXSend
 			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
 			tabw_i 0, $FX_SEND_INPUT_RIGHT , iftablenumber
 			;
-			tabw_i 0.1, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
+			tabw_i 0.05, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
 			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
-			tabw_i 0.2, $FX_SEND_DELAY_RIGHT_TIME , iftablenumber
+			tabw_i 0.025, $FX_SEND_DELAY_RIGHT_TIME , iftablenumber
 			tabw_i 0.4, $FX_SEND_DELAY_RIGHT_FEEDBACK , iftablenumber
 			tabw_i 0, $FX_SEND_DELAY_WET , iftablenumber
 			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
