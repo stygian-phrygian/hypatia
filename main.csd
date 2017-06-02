@@ -255,7 +255,7 @@ instr +InitializeFXSend
 			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
 			tabw_i 0, $FX_SEND_INPUT_RIGHT , iftablenumber
 			;
-			tabw_i 0.4, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
+			tabw_i 0.1, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
 			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
 			tabw_i 0.2, $FX_SEND_DELAY_RIGHT_TIME , iftablenumber
 			tabw_i 0.4, $FX_SEND_DELAY_RIGHT_FEEDBACK , iftablenumber
@@ -263,7 +263,7 @@ instr +InitializeFXSend
 			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
 			;
 			tabw_i 0.3, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
-			tabw_i 0.3, $FX_SEND_REVERB_DAMPING , iftablenumber
+			tabw_i 0.8, $FX_SEND_REVERB_DAMPING , iftablenumber
 			tabw_i 0, $FX_SEND_REVERB_WET , iftablenumber
 			tabw_i 0, $FX_SEND_BIT_REDUCTION , iftablenumber
 			;
@@ -319,7 +319,7 @@ instr +InitializeMaster
 			tabw_i 180, $MASTER_EQ_GAIN_LOW_FREQUENCY , iftablenumber
 			tabw_i 9000, $MASTER_EQ_GAIN_HIGH_FREQUENCY , iftablenumber
 			tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
-			tabw_i 0.1, $MASTER_REVERB_DAMPING , iftablenumber
+			tabw_i 0.7, $MASTER_REVERB_DAMPING , iftablenumber
 			tabw_i 0, $MASTER_REVERB_WET , iftablenumber
 			tabw_i 0, $MASTER_BIT_REDUCTION , iftablenumber
 			tabw_i 0, $MASTER_COMPRESSOR_RATIO , iftablenumber
@@ -896,6 +896,8 @@ asigreverbinl			= asigl
 asigreverbinr			= asigr
 				denorm asigreverbinl, asigreverbinr
 ;
+ihalfsr		= sr / 2
+kreverbdamping	= kreverbdamping * ihalfsr
 asigreverboutl, asigreverboutr	reverbsc asigreverbinl, asigreverbinr, kreverbroomsize, kreverbdamping
 ;asigreverboutl, asigreverboutr	freeverb asigreverbinl, asigreverbinr, kreverbroomsize, kreverbdamping
 
@@ -1038,6 +1040,8 @@ amastersigreverbinl				= gamastersigl
 amastersigreverbinr				= gamastersigr
 						denorm amastersigreverbinl, amastersigreverbinr
 ;
+ihalfsr						= sr / 2
+kmasterreverbdamping				= kmasterreverbdamping * ihalfsr ; <--- reverbsc has a different damping than freeverb
 amastersigreverboutl, amastersigreverboutr	reverbsc amastersigreverbinl, amastersigreverbinr, kmasterreverbroomsize, kmasterreverbdamping
 ;
 ; reverb wetness
