@@ -78,7 +78,7 @@ nchnls	=	2
 ;
 
 
-#define MAX_NUMBER_OF_PARTS		#8#
+#define MAX_NUMBER_OF_PARTS		#128#
 #define MAX_NUMBER_OF_FX_SEND		#2#
 
 ; ftable offset indices
@@ -318,7 +318,7 @@ instr +InitializeMaster
 			tabw_i 0, $MASTER_EQ_GAIN_HIGH , iftablenumber
 			tabw_i 180, $MASTER_EQ_GAIN_LOW_FREQUENCY , iftablenumber
 			tabw_i 9000, $MASTER_EQ_GAIN_HIGH_FREQUENCY , iftablenumber
-			tabw_i 0.3, $MASTER_REVERB_ROOM_SIZE , iftablenumber
+			tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
 			tabw_i 0.1, $MASTER_REVERB_DAMPING , iftablenumber
 			tabw_i 0, $MASTER_REVERB_WET , iftablenumber
 			tabw_i 0, $MASTER_BIT_REDUCTION , iftablenumber
@@ -1144,7 +1144,7 @@ instr BootUp
 	next_fxsend:
 			event "i", ifxsendinstrnum+kinc, 0, -1, kfxsendftable ; <--- there be dragons
 	kfxsendftable	+= 1
-	kinc		+= 0.001
+	kinc		+= 0.001 ; <--- technically, this limits us to 1000 FXSends... but dude.
 			if ( kfxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) kgoto next_fxsend
 
 			; turn on the master
