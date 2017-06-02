@@ -90,7 +90,7 @@ nchnls	=	2
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
 #define NUMBER_OF_ZAK_AUDIO_CHANNELS	#2 * $MAX_NUMBER_OF_FX_SEND#
 #define zak_dummy_variable #$NUMBER_OF_ZAK_AUDIO_CHANNELS#
-zakinit $NUMBER_OF_ZAK_AUDIO_CHANNELS , $zak_dummy_variable 
+zakinit ($NUMBER_OF_ZAK_AUDIO_CHANNELS) , ($zak_dummy_variable)
 
 ; master audio left & right
 gamastersigl		init 0
@@ -816,8 +816,6 @@ endin
 instr +FXSend
 
 	iftablenumber	init p4
-	ileftzakchannel init p5
-	irightzakchannel init p6
 
 			; conjure the correct zak channels to read a-rate data from PlayPart
 			; based off of the ftable we are provided
@@ -829,6 +827,11 @@ instr +FXSend
 			; Errors which I thought were the fault of csound and spent an hour debugging.
 			; So once again.
 			; DO NOT remove ifxsendftableoffset
+ifxsendftableoffset	init $FX_SEND_FTABLE_OFFSET 
+ileftzakchannel		init int(2 * (iftablenumber - ifxsendftableoffset))
+irightzakchannel	init i(ileftzakchannel) + 1
+			prints "iftablenumber: %f\n", iftablenumber
+			prints "ileftzakchannel: %f, irightzakchannel: %f\n", ileftzakchannel, irightzakchannel
 
 			; read in audio input
 asigl			zar ileftzakchannel
@@ -1103,18 +1106,48 @@ instr BootUp
 
 			; turn on $MAX_NUMBER_OF_FX_SEND FXSend instruments
 			; and associate them with the proper ftables
-	ifxsendftable	init $FX_SEND_FTABLE_OFFSET
+			;
+			;
+			; Alright.  Rant-time.
+			; 
+			; The code below looks odd (why is ifxsendinstrnum being incremented?).
+			; Well dear reader, it's because if you don't increment it 
+			; (which semantically creates seperate instruments), 
+			; the zak opcode won't work in FXSend.
+			;
+			; I hear you say:
+			; "B-But I thought the 'event' opcode *did* instantiate seperate instruments..."
+			;
+			; In fact, it does! ...and yet the zak opcode won't work regardless.
+			; You need the witchcraft I've written below.
+			;
+			; Who knows.  Fuck this language. I spent hours trying it figure it out.
+			; HOURS.
+			;
+			; Csound's documentation...
+			; regarding the zak opcodes is amazingly unhelpful (with literal contradictions
+			; regarding where you index for reading and writing into zak space).
+			; It says zak-space starts at 0 and goes to N, and in the very same 
+			; fucking demo csd file the provided code doesn't follow this convention 
+			; and get this...
+			; it fucking RUNS anyway!
+			;
+			;
+			; In summary. Fuck this language.  Fuck the parser for it.  Fuck its shitty
+			; macro system.  Fuck its dated assembler syntax.
+			; Fuck it
+			;
+			;
+	kfxsendftable	init $FX_SEND_FTABLE_OFFSET
+	ifxsendinstrnum = nstrnum("FXSend")
+	kinc		init 0
 	next_fxsend:
-	ifxsendzakleft  = 2 * (ifxsendftable - ($FX_SEND_FTABLE_OFFSET))
-	ifxsendzakright = ifxsendzakleft + 1
-			prints "booting up FXSend with ftable #%d using zak channels %d & %d for left & right audio input respectively\n", ifxsendftable, ifxsendzakleft, ifxsendzakright
-			event_i "i", "FXSend", 0, -1, ifxsendftable, ifxsendzakleft, ifxsendzakright
-			prints "$FX_SEND_FTABLE_OFFSET\n"
-	ifxsendftable	+= 1
-			if ( ifxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
+			event "i", ifxsendinstrnum+kinc, 0, -1, kfxsendftable ; <--- there be dragons
+	kfxsendftable	+= 1
+	kinc		+= 0.001
+			if ( kfxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) kgoto next_fxsend
 
 			; turn on the master
-			prints "booting up Master"
 			turnon nstrnum("Master")
 
 			; limit the allocations of Recorder to 1
