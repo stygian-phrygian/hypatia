@@ -193,6 +193,25 @@ giosclistenhandle	OSCinit giosclistenport
 #define MASTER_COMPRESSOR_RELEASE	 #12#
 #define MASTER_GAIN			 #13#
 
+; instrument which listens for score data
+;
+; NB. I tried making seperate instruments which listened for seperate 
+; "things" (ie. LoadSampleIntoPart, RecordIntoPart, PlayPart, etc) but 
+; this created extremely weird timing issues.  Therefore, there's now only
+; one OSC input port which listens for csound score data.
+instr +OSCScoreListener
+Sscore			strcpy ""
+nextscore:
+kscorereceived		OSClisten giosclistenhandle, "/score", "s", Sscore
+			if (kscorereceived == 0) kgoto donescore
+				printks "[OSC] received score:\n", 0
+				printks Sscore, 0
+				printks "\n", 0
+				scoreline Sscore, 1
+				kgoto nextscore
+donescore:
+endin
+
 instr InitializePart
 
 	iftablenumber	init p4
@@ -250,27 +269,27 @@ turnon nstrnum("CreateAllParts")
 instr InitializeFXSend
 
 	iftablenumber	init p4
-			tabw_i 0, $FX_SEND_INPUT_LEFT, iftablenumber
-			tabw_i 0, $FX_SEND_INPUT_RIGHT, iftablenumber
+			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
+			tabw_i 0, $FX_SEND_INPUT_RIGHT , iftablenumber
 			;
-			tabw_i 0.1, $FX_SEND_DELAY_LEFT_TIME, iftablenumber
-			tabw_i 0.2, $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
-			tabw_i 0.2, $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
-			tabw_i 0.4, $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
-			tabw_i 0, $FX_SEND_DELAY_WET, iftablenumber
-			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
+			tabw_i 0.4, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
+			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
+			tabw_i 0.2, $FX_SEND_DELAY_RIGHT_TIME , iftablenumber
+			tabw_i 0.4, $FX_SEND_DELAY_RIGHT_FEEDBACK , iftablenumber
+			tabw_i 0, $FX_SEND_DELAY_WET , iftablenumber
+			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
 			;
-			tabw_i 0.3, $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
-			tabw_i 0.3, $FX_SEND_REVERB_DAMPING, iftablenumber
-			tabw_i 0, $FX_SEND_REVERB_WET, iftablenumber
-			tabw_i 0, $FX_SEND_BIT_REDUCTION, iftablenumber
+			tabw_i 0.3, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
+			tabw_i 0.3, $FX_SEND_REVERB_DAMPING , iftablenumber
+			tabw_i 0, $FX_SEND_REVERB_WET , iftablenumber
+			tabw_i 0, $FX_SEND_BIT_REDUCTION , iftablenumber
 			;
-			tabw_i 0, $FX_SEND_COMPRESSOR_RATIO, iftablenumber
-			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
-			tabw_i 0.1, $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
-			tabw_i 0.2, $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
-			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
-			tabw_i 1, $FX_SEND_GAIN, iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_RATIO , iftablenumber
+			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD , iftablenumber
+			tabw_i 0.1, $FX_SEND_COMPRESSOR_ATTACK , iftablenumber
+			tabw_i 0.2, $FX_SEND_COMPRESSOR_RELEASE , iftablenumber
+			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE , iftablenumber
+			tabw_i 1, $FX_SEND_GAIN , iftablenumber
 			
 			prints "initialized FXSend on ftable # %d\n", iftablenumber
 
@@ -543,7 +562,7 @@ iparametervalue		init p6
 endin
 
 instr SetFXSendParameter
-iftablenumber		init p4 + $FX_SEND_FTABLE_OFFSET + 1	; 1 - $MAX_NUMBER_OF_FX_SEND
+iftablenumber		init p4 + ($FX_SEND_FTABLE_OFFSET) - 1	; 1 - $MAX_NUMBER_OF_FX_SEND
 iparameter		init p5
 iparametervalue		init p6
 			tabw_i iparametervalue, iparameter, iftablenumber
@@ -791,7 +810,7 @@ asigr			*= kampenvelope
 				; NB. can't use 'tabw' because its 3rd argument 
 				; only operates at i-rate (and we need k-rate)
 				; hence we have to resort to zak channels
-				kleftzakchannel		= (kbusdestination - 1 ) * 2
+				kleftzakchannel		= int((kbusdestination - 1 ) * 2)
 				krightzakchannel	= kleftzakchannel + 1
 				zawm asigl, kleftzakchannel
 				zawm asigr, krightzakchannel
@@ -826,12 +845,14 @@ instr +FXSend
 			; So once again.
 			; DO NOT remove ifxsendftableoffset
 ifxsendftableoffset	init $FX_SEND_FTABLE_OFFSET 
-ileftzakchannel		init 2 * (iftablenumber - ifxsendftableoffset)
-irightzakchannel	init ileftzakchannel + 1
+kleftzakchannel		init int(2 * (iftablenumber - ifxsendftableoffset))
+krightzakchannel	init i(kleftzakchannel) + 1
+			prints "kleftzakchannel: %f, krightzakchannel: %f\n", kleftzakchannel, krightzakchannel
 
 			; read in audio input
-asigl			zar ileftzakchannel
-asigr			zar irightzakchannel
+asigl			zar kleftzakchannel
+asigr			zar krightzakchannel
+			outs asigl, asigr
 
 			; read the ftable associated with this FXSend
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
@@ -1091,25 +1112,6 @@ inumberofzakaudiochannels = $NUMBER_OF_ZAK_AUDIO_CHANNELS	; <--- if we don't do 
 			zacl 0, inumberofzakaudiochannels  
 endin
 
-; instrument which listens for score data
-;
-; NB. I tried making seperate instruments which listened for seperate 
-; "things" (ie. LoadSampleIntoPart, RecordIntoPart, PlayPart, etc) but 
-; this created extremely weird timing issues.  Therefore, there's now only
-; one OSC input port which listens for csound score data.
-instr +OSCScoreListener
-
-Sscore			strcpy ""
-nextscore:
-kscorereceived		OSClisten giosclistenhandle, "/score", "s", Sscore
-			if (kscorereceived == 0) kgoto donescore
-				printks "[OSC] received score:\n", 0
-				printks Sscore, 0
-				printks "\n", 0
-				scoreline Sscore, 1
-				kgoto nextscore
-donescore:
-endin
 
 ; the following instrument turns on necessary performance instruments
 ; as well as performs any other necessary initialization 
@@ -1122,11 +1124,13 @@ instr BootUp
 			; and associate them with the proper ftables
 	ifxsendftable	init $FX_SEND_FTABLE_OFFSET
 	next_fxsend:
+			prints "booting up FXSend with ftable #%d\n", ifxsendftable
 			event_i "i", "FXSend", 0, -1, ifxsendftable
 	ifxsendftable	+= 1
 			if ( ifxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
 
 			; turn on the master
+			prints "booting up Master"
 			turnon nstrnum("Master")
 
 			; limit the allocations of Recorder to 1
