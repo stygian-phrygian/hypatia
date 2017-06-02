@@ -7,24 +7,7 @@
 ; It can also send the sounds to effects busses
 ; It can save a bunch of sounds to a project directory
 ; It uses OSC for controlling all this (MIDI is fun but too limited)
-
-
-; THIS OSC NETOWORK IS INVALID NOW
-; there's only /score
-; which receives score data
-; the method below would be more elegant but it has timing issues
-;
-
-; OSC NETWORK
-; /loadsampleintopart [part# filename]
-; /loadproject [directoryname]
-; /recordstart [recordmode]
-; /recordstop [dummyvariable]
-; /playpart [part# when duration]
-; /setpartparameter [part# partparameter# value]
-; /setfxbussparameter [buss# bussparameter# value] 
-; /setmasterbussparameter [buss# bussparameter# value] 
-
+; It receives csound score data on the OSC port and url of '/score'
 
 
 <CsoundSynthesizer>
