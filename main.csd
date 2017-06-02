@@ -195,7 +195,7 @@ kscorereceived		OSClisten giosclistenhandle, "/score", "s", Sscore
 donescore:
 endin
 
-instr InitializePart
+instr +InitializePart
 
 	iftablenumber	init p4
 			tabw_i $SAMPLE_FTABLE_OFFSET      , $PART_SAMPLE                  , iftablenumber
@@ -218,7 +218,7 @@ instr InitializePart
 			turnoff
 endin
 
-instr CreatePart
+instr +CreatePart
 
 irequestedftablenumber	init p4
 iftablesize		init $NUMBER_OF_PARAMETERS_PER_PART 
@@ -235,7 +235,7 @@ icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenrouti
 
 endin
 
-instr CreateAllParts
+instr +CreateAllParts
 
 	ipart		init 1
 	next_part:
@@ -249,7 +249,7 @@ turnon nstrnum("CreateAllParts")
 
 
 
-instr InitializeFXSend
+instr +InitializeFXSend
 
 	iftablenumber	init p4
 			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
@@ -279,7 +279,7 @@ instr InitializeFXSend
 			turnoff
 endin
 
-instr CreateFXSend
+instr +CreateFXSend
 
 irequestedftablenumber	init p4
 iftablesize		init $NUMBER_OF_PARAMETERS_PER_FX_SEND
@@ -296,7 +296,7 @@ icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenrouti
 
 endin
 
-instr CreateAllFXSends
+instr +CreateAllFXSends
 
 	ifxsend		init $FX_SEND_FTABLE_OFFSET
 	next_fxsend:
@@ -310,7 +310,7 @@ turnon nstrnum("CreateAllFXSends")
 
 
 
-instr InitializeMaster
+instr +InitializeMaster
 
 	iftablenumber	init p4
 			tabw_i 0, $MASTER_EQ_GAIN_LOW , iftablenumber
@@ -333,7 +333,7 @@ instr InitializeMaster
 			turnoff
 endin
 
-instr CreateMaster
+instr +CreateMaster
 
 irequestedftablenumber	init $MASTER_FTABLE_OFFSET
 iftablesize		init $NUMBER_OF_PARAMETERS_PER_MASTER
@@ -536,7 +536,7 @@ endop
 ;				setksmps 1
 ;endop
 
-instr SetPartParameter
+instr +SetPartParameter
 ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
 ipartparameter		init p5
 iparametervalue		init p6
@@ -544,7 +544,7 @@ iparametervalue		init p6
 			turnoff
 endin
 
-instr SetFXSendParameter
+instr +SetFXSendParameter
 iftablenumber		init p4 + ($FX_SEND_FTABLE_OFFSET) - 1	; 1 - $MAX_NUMBER_OF_FX_SEND
 iparameter		init p5
 iparametervalue		init p6
@@ -552,7 +552,7 @@ iparametervalue		init p6
 			turnoff
 endin
 
-instr SetMasterParameter
+instr +SetMasterParameter
 iftablenumber		init $MASTER_FTABLE_OFFSET 
 iparameter		init p4
 iparametervalue		init p5
@@ -560,7 +560,7 @@ iparametervalue		init p5
 			turnoff
 endin
 
-instr PlayPart
+instr +PlayPart
 ; playback of a sample (ftable) with an existing part's state (which is also an ftable)
 
 reinitialize_instrument:	; <--- reinitialization label, for use if we change part parameters
@@ -816,6 +816,8 @@ endin
 instr +FXSend
 
 	iftablenumber	init p4
+	ileftzakchannel init p5
+	irightzakchannel init p6
 
 			; conjure the correct zak channels to read a-rate data from PlayPart
 			; based off of the ftable we are provided
@@ -827,14 +829,10 @@ instr +FXSend
 			; Errors which I thought were the fault of csound and spent an hour debugging.
 			; So once again.
 			; DO NOT remove ifxsendftableoffset
-ifxsendftableoffset	init $FX_SEND_FTABLE_OFFSET 
-kleftzakchannel		init int(2 * (iftablenumber - ifxsendftableoffset))
-krightzakchannel	init i(kleftzakchannel) + 1
-			prints "kleftzakchannel: %f, krightzakchannel: %f\n", kleftzakchannel, krightzakchannel
 
 			; read in audio input
-asigl			zar kleftzakchannel
-asigr			zar krightzakchannel
+asigl			zar ileftzakchannel
+asigr			zar irightzakchannel
 			outs asigl, asigr
 
 			; read the ftable associated with this FXSend
@@ -1107,8 +1105,11 @@ instr BootUp
 			; and associate them with the proper ftables
 	ifxsendftable	init $FX_SEND_FTABLE_OFFSET
 	next_fxsend:
-			prints "booting up FXSend with ftable #%d\n", ifxsendftable
-			event_i "i", "FXSend", 0, -1, ifxsendftable
+	ifxsendzakleft  = 2 * (ifxsendftable - ($FX_SEND_FTABLE_OFFSET))
+	ifxsendzakright = ifxsendzakleft + 1
+			prints "booting up FXSend with ftable #%d using zak channels %d & %d for left & right audio input respectively\n", ifxsendftable, ifxsendzakleft, ifxsendzakright
+			event_i "i", "FXSend", 0, -1, ifxsendftable, ifxsendzakleft, ifxsendzakright
+			prints "$FX_SEND_FTABLE_OFFSET\n"
 	ifxsendftable	+= 1
 			if ( ifxsendftable < $FX_SEND_FTABLE_OFFSET + $MAX_NUMBER_OF_FX_SEND ) igoto next_fxsend
 
