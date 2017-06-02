@@ -836,7 +836,6 @@ irightzakchannel	init i(ileftzakchannel) + 1
 			; read in audio input
 asigl			zar ileftzakchannel
 asigr			zar irightzakchannel
-			outs asigl, asigr
 
 			; read the ftable associated with this FXSend
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
