@@ -179,7 +179,7 @@ giosclistenhandle	OSCinit giosclistenport
 ; instrument which listens for score data
 ;
 ; NB. I tried making seperate instruments which listened for seperate 
-; "things" (ie. LoadSampleIntoPart, RecordIntoPart, PlayPart, etc) but 
+; "things" (ie. LoadPartFromSample, RecordIntoPart, PlayPart, etc) but 
 ; this created extremely weird timing issues.  Therefore, there's now only
 ; one OSC input port which listens for csound score data.
 instr +OSCScoreListener
@@ -354,7 +354,7 @@ turnon nstrnum("CreateMaster")
 instr +LoadSample
 ; args: ftable number, filename
 ;
-; NB. never call this function directly.  Use LoadSampleIntoPart which will take care of
+; NB. never call this function directly.  Use LoadPartFromSample which will take care of
 ; ftable memory layout (otherwise the results could be quite... dangerous).
 
 iftn		init p4
@@ -380,7 +380,7 @@ inchnls		filenchnls Sfilename
 		turnoff
 endin
 
-instr +LoadSampleIntoPart
+instr +LoadPartFromSample
 ipartnumber	init p4		; [ 1 - $MAX_NUMBER_OF_PARTS ]
 Sfilename	init p5
 
@@ -393,7 +393,6 @@ Sfilename	init p5
 	itrueftableindex	init $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
 	Sfstatement		sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, itrueftableindex, Sfilename
 				scoreline Sfstatement, 1
-;				event_i "i", "LoadSample", 0, -1, itrueftableindex, Sfilename
 				tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
 				turnoff
 endin
@@ -995,7 +994,7 @@ Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ss
 	; when we're done recording
 	; load the new sample into the provided part
 	if (kreleased == 1) then
-	        Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, ipartnumber, Sfilename
+	        Sfstatement	sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
 				scoreline Sfstatement, 1
 				printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
 				turnoff
