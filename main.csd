@@ -829,8 +829,6 @@ instr +FXSend
 ifxsendftableoffset	init $FX_SEND_FTABLE_OFFSET 
 ileftzakchannel		init int(2 * (iftablenumber - ifxsendftableoffset))
 irightzakchannel	init i(ileftzakchannel) + 1
-			prints "iftablenumber: %f\n", iftablenumber
-			prints "ileftzakchannel: %f, irightzakchannel: %f\n", ileftzakchannel, irightzakchannel
 
 			; read in audio input
 asigl			zar ileftzakchannel
