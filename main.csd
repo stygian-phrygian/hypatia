@@ -1166,6 +1166,8 @@ turnon nstrnum("BootUp")
 </CsInstruments>
 <CsScore>
 e 3600 ; stay on for 1 hour
+i "RecordIntoPart" 0 -1 1 0
+i -"RecordIntoPart" 0  1 1 0
 </CsScore>
 </CsoundSynthesizer>
 
