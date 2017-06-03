@@ -981,7 +981,7 @@ Ssec      strsub    Stim, 17, 19
 Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
 
 	;debug
-	prints "Recording into part#: %d\n", ipartnumber
+	prints "Recording into part#: %d\n\n\n", ipartnumber
 
 	if (imode == $MODE_RECORD_MASTER ) then
 				fout Sfilename, 14, gamastersigl, gamastersigr
@@ -997,10 +997,18 @@ Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ss
 	if (kreleased == 1) then
 	        Sfstatement	sprintfk {{i "LoadSampleIntoPart" 0 -1 %d "%s"}}, ipartnumber, Sfilename
 				scoreline Sfstatement, 1
-				printks "Done recording into part#: %d\n", 0, ipartnumber
+				printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
 				turnoff
 	endif
 
+endin
+
+instr +StopRecording
+	; turn off all instances of RecordIntoPart
+	; and allow it to release
+	turnoff2 nstrnum("RecordIntoPart"), 0, 1
+	; turn off this instrument itself
+	turnoff
 endin
 
 ; ------------------------------------------
@@ -1166,8 +1174,6 @@ turnon nstrnum("BootUp")
 </CsInstruments>
 <CsScore>
 e 3600 ; stay on for 1 hour
-i "RecordIntoPart" 0 -1 1 0
-i -"RecordIntoPart" 0  1 1 0
 </CsScore>
 </CsoundSynthesizer>
 
