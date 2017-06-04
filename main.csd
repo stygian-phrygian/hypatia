@@ -118,8 +118,8 @@ giosclistenhandle	OSCinit giosclistenport
 #define PART_DISTORTION_AMOUNT		#9#
 #define PART_TIMESTRETCH_FACTOR		#10#
 #define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205
-#define PART_STEP_NUDGE			#12#
-#define PART_GATE			#13#	; how many steps
+#define PART_STEP_NUDGE			#12#	; unused 
+#define PART_GATE			#13#	; unused
 #define PART_BUS_DESTINATION		#14#	; 0:  master, >0: fx bus
 ; part parameters - modulation 
 #define PART_AMP_ATTACK			#17#
@@ -582,6 +582,7 @@ kfiltertype		tab $PART_FILTER_TYPE               , ipartnumber
 kpan			tab $PART_PAN                       , ipartnumber 
 kdetunespread		tab $PART_DETUNE_SPREAD             , ipartnumber 
 kdistortionamount	tab $PART_DISTORTION_AMOUNT         , ipartnumber 
+kbusdestination		tab $PART_BUS_DESTINATION           , ipartnumber
 			; -- realtime editable parameters
 			; -- but are i-values in the instrument therefore
 			; -- changing them causes instrument reinitialization
@@ -594,7 +595,6 @@ ktimestretchwindowsize	tab   $PART_TIMESTRETCH_WINDOW_SIZE , ipartnumber
 itimestretchwindowsize	init i(ktimestretchwindowsize)
 ;istepnudge		tab_i $PART_STEP_NUDGE              , ipartnumber
 ;igate			tab_i $PART_GATE                    , ipartnumber
-kbusdestination		tab $PART_BUS_DESTINATION           , ipartnumber
 			; -----------------------------------------------
 			; -- realtime editable modulation --
 kampattack		tab $PART_AMP_ATTACK                , ipartnumber
@@ -625,11 +625,23 @@ kampenvelope		*= kamp
 			; create env1 (assignable) envelope (this has just attack and decay)
 kenv1envelope		kmadsr kenv1attack, kenv1decay, 0, 0
 
-			; scale env1 envelope, unscaled env1: [ 0 - 1 ], scaled env1 : [ 1 - env1depth ]
-			; NB. env1depth should *always* be >= 1
-			; FIXME: handle negative depth?
-kenv1envelope		*= (kenv1depth - 1)
-kenv1envelope		+= 1
+			; scale env1envelope by env1depth
+			; env1depth must be > 1 or < -1 to have any effect
+			; the original env1 : [ 0 - 1 ]
+			; the scaled env1   : [ 1 - env1depth ] or [env1depth - -1]
+			;
+			; handle positive depth
+			if(kenv1depth >= 1) then 
+				kenv1envelope	*= (kenv1depth - 1)
+				kenv1envelope	+= 1
+			; handle negative depth
+			elseif(kenv1depth <= -1) then
+				kenv1envelope	*= (-1 - kenv1depth)
+				kenv1envelope	-= 1
+			; handle invalid depth (between -1 and 1)
+			else
+				kenv1envelope = 1
+			endif
 
 			; determine playback speed
 isamplesr		init ftsr(isamplenumber); sample's original sample rate
