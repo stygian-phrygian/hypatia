@@ -313,9 +313,9 @@ turnon nstrnum("CreateAllFXSends")
 instr +InitializeMaster
 
 	iftablenumber	init p4
-			tabw_i 0, $MASTER_EQ_GAIN_LOW , iftablenumber
-			tabw_i 0, $MASTER_EQ_GAIN_MID , iftablenumber
-			tabw_i 0, $MASTER_EQ_GAIN_HIGH , iftablenumber
+			tabw_i 1, $MASTER_EQ_GAIN_LOW , iftablenumber
+			tabw_i 1, $MASTER_EQ_GAIN_MID , iftablenumber
+			tabw_i 1, $MASTER_EQ_GAIN_HIGH , iftablenumber
 			tabw_i 180, $MASTER_EQ_LOW_CORNER_FREQUENCY , iftablenumber
 			tabw_i 9000, $MASTER_EQ_HIGH_CORNER_FREQUENCY , iftablenumber
 			tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
@@ -1034,8 +1034,20 @@ kmastergain			tab $MASTER_GAIN, iftablenumber
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; eq
 ;
-
-;TODO
+#define PEAKING		 #0#
+#define LOW_SHELVING	 #1#
+#define HIGH_SHELVING	 #2#
+#define NO_RESONANCE	 #0.707106# ; == sqrt(0.5) which is no resonance for this opcode ("pareq")
+; low shelf eq
+gamastersigl	pareq gamastersigl, kmastereqlowcornerfrequency, kmastereqgainlow, $NO_RESONANCE, $LOW_SHELVING
+gamastersigr	pareq gamastersigr, kmastereqlowcornerfrequency, kmastereqgainlow, $NO_RESONANCE, $LOW_SHELVING
+; high shelf eq
+gamastersigl	pareq gamastersigl, kmastereqhighcornerfrequency, kmastereqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
+gamastersigr	pareq gamastersigr, kmastereqhighcornerfrequency, kmastereqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
+; mid peaking eq (relative to the low and high corner frequencies)
+kmastereqmidcenterfrequency = kmastereqlowcornerfrequency + (0.5 * abs(kmastereqhighcornerfrequency - kmastereqlowcornerfrequency))
+gamastersigl	pareq gamastersigl, kmastereqmidcenterfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
+gamastersigr	pareq gamastersigr, kmastereqmidcenterfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
