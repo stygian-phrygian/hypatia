@@ -526,14 +526,9 @@ kampattack, kampdecay, kampsustainlevel, kamprelease	xin
 endop
 
 ;
+; Warning: the following "Setter" instruments 
+; do *no* bounds checking for invalid ftable numbers
 ;
-; Warning: the following do *no* bounds checking for invalid ftable numbers
-;
-;
-;
-;opcode route_to_fx_send, ak 
-;				setksmps 1
-;endop
 
 instr +SetPartParameter
 ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
