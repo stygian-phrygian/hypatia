@@ -164,8 +164,8 @@ giosclistenhandle	OSCinit giosclistenport
 #define MASTER_EQ_GAIN_LOW		 #0#
 #define MASTER_EQ_GAIN_MID		 #1#
 #define MASTER_EQ_GAIN_HIGH		 #2#
-#define MASTER_EQ_GAIN_LOW_FREQUENCY	 #3#
-#define MASTER_EQ_GAIN_HIGH_FREQUENCY	 #4#
+#define MASTER_EQ_LOW_CORNER_FREQUENCY	 #3#
+#define MASTER_EQ_HIGH_CORNER_FREQUENCY	 #4#
 #define MASTER_REVERB_ROOM_SIZE	         #5#
 #define MASTER_REVERB_DAMPING		 #6#
 #define MASTER_REVERB_WET		 #7#
@@ -316,8 +316,8 @@ instr +InitializeMaster
 			tabw_i 0, $MASTER_EQ_GAIN_LOW , iftablenumber
 			tabw_i 0, $MASTER_EQ_GAIN_MID , iftablenumber
 			tabw_i 0, $MASTER_EQ_GAIN_HIGH , iftablenumber
-			tabw_i 180, $MASTER_EQ_GAIN_LOW_FREQUENCY , iftablenumber
-			tabw_i 9000, $MASTER_EQ_GAIN_HIGH_FREQUENCY , iftablenumber
+			tabw_i 180, $MASTER_EQ_LOW_CORNER_FREQUENCY , iftablenumber
+			tabw_i 9000, $MASTER_EQ_HIGH_CORNER_FREQUENCY , iftablenumber
 			tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
 			tabw_i 0.7, $MASTER_REVERB_DAMPING , iftablenumber
 			tabw_i 0, $MASTER_REVERB_WET , iftablenumber
@@ -1016,8 +1016,8 @@ iftablenumber			init $MASTER_FTABLE_OFFSET
 kmastereqgainlow		tab $MASTER_EQ_GAIN_LOW, iftablenumber
 kmastereqgainmid		tab $MASTER_EQ_GAIN_MID, iftablenumber
 kmastereqgainhigh		tab $MASTER_EQ_GAIN_HIGH, iftablenumber
-kmastereqgainlowfrequency	tab $MASTER_EQ_GAIN_LOW_FREQUENCY, iftablenumber
-kmastereqgainhighfrequency	tab $MASTER_EQ_GAIN_HIGH_FREQUENCY, iftablenumber
+kmastereqlowcornerfrequency	tab $MASTER_EQ_LOW_CORNER_FREQUENCY, iftablenumber
+kmastereqhighcornerfrequency	tab $MASTER_EQ_HIGH_CORNER_FREQUENCY, iftablenumber
 kmasterreverbroomsize		tab $MASTER_REVERB_ROOM_SIZE, iftablenumber
 kmasterreverbdamping		tab $MASTER_REVERB_DAMPING, iftablenumber
 kmasterreverbwet		tab $MASTER_REVERB_WET, iftablenumber
