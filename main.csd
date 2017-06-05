@@ -7,7 +7,9 @@
 ; It can also send the sounds to effects busses
 ; It can save a bunch of sounds to a project directory
 ; It uses OSC for controlling all this (MIDI is fun but too limited)
-; It receives csound score data on the OSC port and url of '/score'
+; It listens for csound score data on
+;     OSC port number (default 5000)
+;     OSC url (default '/score')
 
 
 <CsoundSynthesizer>
@@ -76,9 +78,14 @@ nchnls	=	2
 ;
 ;
 
+; osc network
+gSosclistenurl				init "/score"
+giosclistenportnumber			init 5000
+giosclistenhandle			OSCinit giosclistenportnumber
 
+; define the maximum size of the system
 #define MAX_NUMBER_OF_PARTS		#128#
-#define MAX_NUMBER_OF_FX_SEND		#2#
+#define MAX_NUMBER_OF_FX_SEND		#2# ; <--- should not exceed 1000
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET              #1#
@@ -94,11 +101,6 @@ zakinit ($NUMBER_OF_ZAK_AUDIO_CHANNELS) , ($zak_dummy_variable)
 ; master audio left & right
 gamastersigl		init 0
 gamastersigr		init 0
-
-; osc network
-giosclistenport		init 5000
-gioscsendport		init 5001
-giosclistenhandle	OSCinit giosclistenport
 
 
 ; part state
@@ -117,8 +119,8 @@ giosclistenhandle	OSCinit giosclistenport
 #define PART_DISTORTION_AMOUNT		#9#
 #define PART_TIMESTRETCH_FACTOR		#10#
 #define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205
-#define PART_STEP_NUDGE			#12#	; unused 
-#define PART_GATE			#13#	; unused
+#define PART_STEP_NUDGE			#12#	; <--- unused 
+#define PART_GATE			#13#	; <--- unused
 #define PART_BUS_DESTINATION		#14#	; 0:  master, >0: fx bus
 ; part parameters - modulation 
 #define PART_AMP_ATTACK			#17#
@@ -192,7 +194,7 @@ giosclistenhandle	OSCinit giosclistenport
 instr +OSCScoreListener
 Sscore			strcpy ""
 nextscore:
-kscorereceived		OSClisten giosclistenhandle, "/score", "s", Sscore
+kscorereceived		OSClisten giosclistenhandle, gSosclistenurl, "s", Sscore
 			if (kscorereceived == 0) kgoto donescore
 				printks "[OSC] received score:\n", 0
 				printks Sscore, 0
@@ -566,8 +568,9 @@ iparametervalue		init p5
 			turnoff
 endin
 
-instr +PlayPart
+
 ; playback of a sample (ftable) with an existing part's state (which is also an ftable)
+instr +PlayPart
 
 reinitialize_instrument:	; <--- reinitialization label, for use if we change part parameters
 				;      which are represented as i-values 
@@ -826,11 +829,7 @@ asigr			*= kampenvelope
 endin
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; FX TRACK PROCESSING GOES HERE AND BELOW ;
-; DUE TO CSOUND DSP PRECEDENCE            ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+; an optional effects chain that (multiple) PlayPart can route into
 instr +FXSend
 
 	iftablenumber	init p4
@@ -1011,7 +1010,7 @@ kmastercompressorrelease	tab $MASTER_COMPRESSOR_RELEASE, iftablenumber
 kmastergain			tab $MASTER_GAIN, iftablenumber
 
 
-; apply effects now
+; apply (master) effects now
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; eq
@@ -1149,7 +1148,7 @@ Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ss
 
 endin
 
-; this instrument exists so we can turn off a held recorder using
+; this instrument exists so we can turn off a held RecordIntoPart using
 ; the score (which is how communication occurs with this application
 ; via sending score data over OSC)
 instr +StopRecording
