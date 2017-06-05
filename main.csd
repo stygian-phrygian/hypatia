@@ -357,14 +357,26 @@ icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenrouti
 
 endin
 
-instr +LoadSample
-; args: ftable number, filename
-;
-; NB. never call this function directly.  Use LoadPartFromSample which will take care of
-; ftable memory layout (otherwise the results could be quite... dangerous).
-
-iftn		init p4
+; load samples into the system
+instr +LoadPartFromSample
+ipartnumber	init p4		; [ 1 - $MAX_NUMBER_OF_PARTS ]
 Sfilename	init p5
+
+		; check that this part exists
+		if (ipartnumber < 1 || ipartnumber > $MAX_NUMBER_OF_PARTS) then
+			prints "Cannot load sample into nonexistent part #: %d\n", ipartnumber
+			turnoff
+		endif
+
+		; calculate where we will *actually* store
+		; the ftable date of the audio file
+itrueftableindex= $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
+
+		; save a reference to it in the Part
+		tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
+
+		; rename because it's a long name...
+iftn		= itrueftableindex
 
 		; determine how many channels are in our sample file
 inchnls		filenchnls Sfilename
@@ -384,23 +396,7 @@ inchnls		filenchnls Sfilename
 		endif
 
 		turnoff
-endin
 
-instr +LoadPartFromSample
-ipartnumber	init p4		; [ 1 - $MAX_NUMBER_OF_PARTS ]
-Sfilename	init p5
-
-	; check that this part exists
-	if (ipartnumber < 1 || ipartnumber > $MAX_NUMBER_OF_PARTS) then
-		prints "Cannot load sample into nonexistent part #: %d\n", ipartnumber
-		turnoff
-	endif
-
-	itrueftableindex	init $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
-	Sfstatement		sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, itrueftableindex, Sfilename
-				scoreline Sfstatement, 1
-				tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
-				turnoff
 endin
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
