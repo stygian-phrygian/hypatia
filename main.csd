@@ -1250,7 +1250,7 @@ turnon nstrnum("BootUp")
 
 </CsInstruments>
 <CsScore>
-e 3600 ; stay on for 1 hour
+;
 </CsScore>
 </CsoundSynthesizer>
 
