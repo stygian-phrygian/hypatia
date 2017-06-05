@@ -78,6 +78,8 @@ nchnls	=	2
 ;
 ;
 
+; very important variables the enduser can modify
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; osc network
 gSosclistenurl				init "/score"
 giosclistenportnumber			init 5000
@@ -86,6 +88,7 @@ giosclistenhandle			OSCinit giosclistenportnumber
 ; define the maximum size of the system
 #define MAX_NUMBER_OF_PARTS		#128#
 #define MAX_NUMBER_OF_FX_SEND		#2# ; <--- should not exceed 1000
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET              #1#
