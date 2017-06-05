@@ -20,7 +20,6 @@
 
 ; realtime output
 -odac
-
 ; realtime input (will need configuring)
 -iadc
 ;-iadc:hw:2,0 ; (my zoom h2n usb microphone)
@@ -138,24 +137,31 @@ giosclistenhandle	OSCinit giosclistenport
 #define FX_SEND_INPUT_LEFT			#0# ; <--- currently unused (due to zak channel implementation below)
 #define FX_SEND_INPUT_RIGHT			#1# ; <---
 ;
-#define FX_SEND_DELAY_LEFT_TIME			#2#
-#define FX_SEND_DELAY_LEFT_FEEDBACK		#3#
-#define FX_SEND_DELAY_RIGHT_TIME		#4#
-#define FX_SEND_DELAY_RIGHT_FEEDBACK		#5#
-#define FX_SEND_DELAY_WET			#6#
-#define FX_SEND_RING_MOD_FREQUENCY		#7#
+#define FX_SEND_EQ_GAIN_LOW			#2#
+#define FX_SEND_EQ_GAIN_MID			#3#
+#define FX_SEND_EQ_GAIN_HIGH			#4#
+#define FX_SEND_EQ_LOW_CORNER_FREQUENCY		#5#
+#define FX_SEND_EQ_MID_PEAKING_FREQUENCY	#6#
+#define FX_SEND_EQ_HIGH_CORNER_FREQUENCY	#7#
 ;
-#define FX_SEND_REVERB_ROOM_SIZE		#8#
-#define FX_SEND_REVERB_DAMPING			#9#
-#define FX_SEND_REVERB_WET			#10#
-#define FX_SEND_BIT_REDUCTION			#11#
+#define FX_SEND_DELAY_LEFT_TIME			#8#
+#define FX_SEND_DELAY_LEFT_FEEDBACK		#9#
+#define FX_SEND_DELAY_RIGHT_TIME		#10#
+#define FX_SEND_DELAY_RIGHT_FEEDBACK		#11#
+#define FX_SEND_DELAY_WET			#12#
+#define FX_SEND_RING_MOD_FREQUENCY		#13#
 ;
-#define FX_SEND_COMPRESSOR_RATIO		#12# 
-#define FX_SEND_COMPRESSOR_THRESHOLD		#13#
-#define FX_SEND_COMPRESSOR_ATTACK		#14#
-#define FX_SEND_COMPRESSOR_RELEASE		#15#
-#define FX_SEND_SIDE_CHAIN_SOURCE		#16#
-#define FX_SEND_GAIN				#17#
+#define FX_SEND_REVERB_ROOM_SIZE		#14#
+#define FX_SEND_REVERB_DAMPING			#15#
+#define FX_SEND_REVERB_WET			#16#
+#define FX_SEND_BIT_REDUCTION			#17#
+;
+#define FX_SEND_COMPRESSOR_RATIO		#18# 
+#define FX_SEND_COMPRESSOR_THRESHOLD		#19#
+#define FX_SEND_COMPRESSOR_ATTACK		#20#
+#define FX_SEND_COMPRESSOR_RELEASE		#21#
+#define FX_SEND_SIDE_CHAIN_SOURCE		#22#
+#define FX_SEND_GAIN				#23#
 
 
 ; master state 
@@ -246,7 +252,6 @@ instr +CreateAllParts
 			turnoff
 		
 endin
-turnon nstrnum("CreateAllParts")
 
 
 
@@ -255,6 +260,13 @@ instr +InitializeFXSend
 	iftablenumber	init p4
 			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
 			tabw_i 0, $FX_SEND_INPUT_RIGHT , iftablenumber
+			;
+			tabw_i 1, $FX_SEND_EQ_GAIN_LOW , iftablenumber	
+			tabw_i 1, $FX_SEND_EQ_GAIN_MID , iftablenumber	
+			tabw_i 1, $FX_SEND_EQ_GAIN_HIGH , iftablenumber	
+			tabw_i 180, $FX_SEND_EQ_LOW_CORNER_FREQUENCY , iftablenumber	
+			tabw_i 1000, $FX_SEND_EQ_MID_PEAKING_FREQUENY , iftablenumber	
+			tabw_i 9000, $FX_SEND_EQ_HIGH_CORNER_FREQUENY , iftablenumber	
 			;
 			tabw_i 0.18, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
 			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
@@ -307,7 +319,6 @@ instr +CreateAllFXSends
 			turnoff
 		
 endin
-turnon nstrnum("CreateAllFXSends")
 
 
 
@@ -351,7 +362,6 @@ icreatedftablenumber	ftgen irequestedftablenumber, itime, iftablesize, igenrouti
 			turnoff
 
 endin
-turnon nstrnum("CreateMaster")
 
 instr +LoadSample
 ; args: ftable number, filename
@@ -844,6 +854,14 @@ asigl			zar ileftzakchannel
 asigr			zar irightzakchannel
 
 			; read the ftable associated with this FXSend
+			;
+kfxsendeqgainlow	tab $FX_SEND_EQ_GAIN_LOW, iftablenumber	
+kfxsendeqgainmid	tab $FX_SEND_EQ_GAIN_MID, iftablenumber	
+kfxsendeqgainhigh	tab $FX_SEND_EQ_GAIN_HIGH, iftablenumber	
+kfxsendeqlowcornerfrequency tab $FX_SEND_EQ_LOW_CORNER_FREQUENCY, iftablenumber	
+kfxsendeqmidpeakingfrequeny tab $FX_SEND_EQ_MID_PEAKING_FREQUENY, iftablenumber	
+kfxsendeqhighcornerfrequeny tab $FX_SEND_EQ_HIGH_CORNER_FREQUENY, iftablenumber	
+			;
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
 kdelayleftfeedback	tab $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
 kdelayrighttime		tab $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
@@ -860,10 +878,27 @@ kcompressorratio	tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 kcompressorthreshold	tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
 kcompressorattack	tab $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
 kcompressorrelease	tab $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
-kcompressorsidechainsource	tab $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
+kcompressorsidechainsource tab $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
 kgain			tab $FX_SEND_GAIN, iftablenumber
 
 ; apply effects now
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; eq
+;
+#define PEAKING		 #0#
+#define LOW_SHELVING	 #1#
+#define HIGH_SHELVING	 #2#
+#define NO_RESONANCE	 #0.707106# ; == sqrt(0.5) which is no resonance for this opcode ("pareq")
+; low shelf eq
+asigl	pareq asigl, kfxsendeqlowcornerfrequency, kfxsendeqgainlow, $NO_RESONANCE, $LOW_SHELVING
+asigr	pareq asigr, kfxsendeqlowcornerfrequency, kfxsendeqgainlow, $NO_RESONANCE, $LOW_SHELVING
+; mid peaking eq
+asigl	pareq asigl, kfxsendeqmidpeakingfrequency, kfxsendeqgainmid, $NO_RESONANCE, $PEAKING
+asigr	pareq asigr, kfxsendeqmidpeakingfrequency, kfxsendeqgainmid, $NO_RESONANCE, $PEAKING
+; high shelf eq
+asigl	pareq asigl, kfxsendeqhighcornerfrequency, kfxsendeqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
+asigr	pareq asigr, kfxsendeqhighcornerfrequency, kfxsendeqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ring modulation
@@ -1145,6 +1180,12 @@ endin
 ; the following instrument turns on necessary performance instruments
 ; as well as performs any other necessary initialization 
 instr BootUp
+
+			; create audio system's state 
+			; ie. ftables for Parts, FXSends, and the Master
+			turnon nstrnum("CreateAllParts")
+			turnon nstrnum("CreateAllFXSends")
+			turnon nstrnum("CreateMaster")
 
 			; turn on our OSC score listener
 			turnon nstrnum("OSCScoreListener")
