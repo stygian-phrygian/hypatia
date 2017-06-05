@@ -165,16 +165,17 @@ giosclistenhandle	OSCinit giosclistenport
 #define MASTER_EQ_GAIN_MID		 #1#
 #define MASTER_EQ_GAIN_HIGH		 #2#
 #define MASTER_EQ_LOW_CORNER_FREQUENCY	 #3#
-#define MASTER_EQ_HIGH_CORNER_FREQUENCY	 #4#
-#define MASTER_REVERB_ROOM_SIZE	         #5#
-#define MASTER_REVERB_DAMPING		 #6#
-#define MASTER_REVERB_WET		 #7#
-#define MASTER_BIT_REDUCTION		 #8#
-#define MASTER_COMPRESSOR_RATIO		 #9# 
-#define MASTER_COMPRESSOR_THRESHOLD	 #10#
-#define MASTER_COMPRESSOR_ATTACK	 #11#
-#define MASTER_COMPRESSOR_RELEASE	 #12#
-#define MASTER_GAIN			 #13#
+#define MASTER_EQ_MID_PEAKING_FREQUENCY	 #4#
+#define MASTER_EQ_HIGH_CORNER_FREQUENCY	 #5#
+#define MASTER_REVERB_ROOM_SIZE	         #6#
+#define MASTER_REVERB_DAMPING		 #7#
+#define MASTER_REVERB_WET		 #8#
+#define MASTER_BIT_REDUCTION		 #9#
+#define MASTER_COMPRESSOR_RATIO		 #10# 
+#define MASTER_COMPRESSOR_THRESHOLD	 #11#
+#define MASTER_COMPRESSOR_ATTACK	 #12#
+#define MASTER_COMPRESSOR_RELEASE	 #13#
+#define MASTER_GAIN			 #14#
 
 ; instrument which listens for score data
 ;
@@ -317,6 +318,7 @@ instr +InitializeMaster
 			tabw_i 1, $MASTER_EQ_GAIN_MID , iftablenumber
 			tabw_i 1, $MASTER_EQ_GAIN_HIGH , iftablenumber
 			tabw_i 180, $MASTER_EQ_LOW_CORNER_FREQUENCY , iftablenumber
+			tabw_i 1000, $MASTER_EQ_MID_PEAKING_FREQUENCY , iftablenumber
 			tabw_i 9000, $MASTER_EQ_HIGH_CORNER_FREQUENCY , iftablenumber
 			tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
 			tabw_i 0.7, $MASTER_REVERB_DAMPING , iftablenumber
@@ -951,69 +953,6 @@ gamastersigr	+= asigr
 
 endin
 
-; ------------------------------------------
-; record audio from sources (master or audio input)
-; critical to workflow (tweak - resample - repeat)
-;
-; NB. This instrument must come at the end of all the audio processing
-; *BUT* before Master clears the master signal data
-; CSound's DSP precedence... Yep.
-
-instr +RecordIntoPart
-
-#define MODE_RECORD_MASTER	#0#
-
-ipartnumber     init p4
-imode		init p5	; 0 - mastertrack, != 0 - audio_in
-
-kreleased	release
-
-; generate a different filename each time instrument is called
-; perhaps name should be conjoined from existing vocabulary?
-;     ex: projectname + rand(dictonary) + rand(dictionary) -> proj1_monkey_helicopter.wav
-;     it's easier to remember and read than a date... idk
-;     it's also funny
-itim      date
-Stim      dates     itim
-Syear     strsub    Stim, 20, 24
-Smonth    strsub    Stim, 4, 7
-Sday      strsub    Stim, 8, 10
-iday      strtod    Sday
-Shor      strsub    Stim, 11, 13
-Smin      strsub    Stim, 14, 16
-Ssec      strsub    Stim, 17, 19
-Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
-
-	;debug
-	prints "Recording into part#: %d\n\n\n", ipartnumber
-
-	if (imode == $MODE_RECORD_MASTER ) then
-				fout Sfilename, 14, gamastersigl, gamastersigr
-	else
-		asigl, asigr	ins
-				; should we be playing audio_in through a track simultaneously ?
-				; outs asigl, asigr
-				fout Sfilename, 14, asigl, asigr
-	endif
-
-	; when we're done recording
-	; load the new sample into the provided part
-	if (kreleased == 1) then
-	        Sfstatement	sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
-				scoreline Sfstatement, 1
-				printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
-				turnoff
-	endif
-
-endin
-
-instr +StopRecording
-	; turn off all instances of RecordIntoPart
-	; and allow it to release
-	turnoff2 nstrnum("RecordIntoPart"), 0, 1
-	; turn off this instrument itself
-	turnoff
-endin
 
 ; ------------------------------------------
 instr +Master
@@ -1024,6 +963,7 @@ kmastereqgainlow		tab $MASTER_EQ_GAIN_LOW, iftablenumber
 kmastereqgainmid		tab $MASTER_EQ_GAIN_MID, iftablenumber
 kmastereqgainhigh		tab $MASTER_EQ_GAIN_HIGH, iftablenumber
 kmastereqlowcornerfrequency	tab $MASTER_EQ_LOW_CORNER_FREQUENCY, iftablenumber
+kmastereqmidpeakingfrequency	tab $MASTER_EQ_MID_PEAKING_FREQUENCY, iftablenumber
 kmastereqhighcornerfrequency	tab $MASTER_EQ_HIGH_CORNER_FREQUENCY, iftablenumber
 kmasterreverbroomsize		tab $MASTER_REVERB_ROOM_SIZE, iftablenumber
 kmasterreverbdamping		tab $MASTER_REVERB_DAMPING, iftablenumber
@@ -1048,13 +988,12 @@ kmastergain			tab $MASTER_GAIN, iftablenumber
 ; low shelf eq
 gamastersigl	pareq gamastersigl, kmastereqlowcornerfrequency, kmastereqgainlow, $NO_RESONANCE, $LOW_SHELVING
 gamastersigr	pareq gamastersigr, kmastereqlowcornerfrequency, kmastereqgainlow, $NO_RESONANCE, $LOW_SHELVING
+; mid peaking eq
+gamastersigl	pareq gamastersigl, kmastereqmidpeakingfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
+gamastersigr	pareq gamastersigr, kmastereqmidpeakingfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
 ; high shelf eq
 gamastersigl	pareq gamastersigl, kmastereqhighcornerfrequency, kmastereqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
 gamastersigr	pareq gamastersigr, kmastereqhighcornerfrequency, kmastereqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
-; mid peaking eq (relative to the low and high corner frequencies)
-kmastereqmidcenterfrequency = kmastereqlowcornerfrequency + (0.5 * abs(kmastereqhighcornerfrequency - kmastereqlowcornerfrequency))
-gamastersigl	pareq gamastersigl, kmastereqmidcenterfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
-gamastersigr	pareq gamastersigr, kmastereqmidcenterfrequency, kmastereqgainmid, $NO_RESONANCE, $PEAKING
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
@@ -1109,9 +1048,88 @@ gamastersigr		*= kmastergain
 			; clip everything
 gamastersigl		clip gamastersigl, 2, 1.0
 gamastersigr		clip gamastersigr, 2, 1.0
-;
+
 			; output to DAC
 			outs gamastersigl, gamastersigr
+
+			; clearing gamastersigl & gamastersigr 
+			; as well as clearing the zak channels
+			; is handled in ClearAudioChannels
+			; (so we can record the output of Master with RecordIntoPart)
+
+endin
+
+; ------------------------------------------
+; record audio from sources (Master's output or audio input)
+; critical to workflow (tweak - resample - repeat)
+;
+; NB. This instrument must come at the end of all the audio processing
+; *BUT* before the audio data is cleared for the next a-rate loop
+; CSound's DSP precedence... Yep.
+instr +RecordIntoPart
+
+#define MODE_RECORD_MASTER	#0#
+
+ipartnumber     init p4
+imode		init p5	; 0 - mastertrack, != 0 - audio_in
+
+kreleased	release
+
+; generate a different filename each time instrument is called
+; perhaps name should be conjoined from existing vocabulary?
+;     ex: projectname + rand(dictonary) + rand(dictionary) -> proj1_monkey_helicopter.wav
+;     it's easier to remember and read than a date... idk
+;     it's also funny
+itim      date
+Stim      dates     itim
+Syear     strsub    Stim, 20, 24
+Smonth    strsub    Stim, 4, 7
+Sday      strsub    Stim, 8, 10
+iday      strtod    Sday
+Shor      strsub    Stim, 11, 13
+Smin      strsub    Stim, 14, 16
+Ssec      strsub    Stim, 17, 19
+Sfilename sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
+
+	;debug
+	prints "Recording into part#: %d\n\n\n", ipartnumber
+
+	if (imode == $MODE_RECORD_MASTER ) then
+				fout Sfilename, 14, gamastersigl, gamastersigr
+	else
+		asigl, asigr	ins
+				; should we be playing audio_in through a track simultaneously ?
+				; outs asigl, asigr
+				fout Sfilename, 14, asigl, asigr
+	endif
+
+	; when we're done recording
+	; load the new sample into the provided part
+	if (kreleased == 1) then
+	        Sfstatement	sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
+				scoreline Sfstatement, 1
+				printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
+				turnoff
+	endif
+
+endin
+
+; this instrument exists so we can turn off a held recorder using
+; the score (which is how communication occurs with this application
+; via sending score data over OSC)
+instr +StopRecording
+	; turn off all instances of RecordIntoPart
+	; and allow it to release
+	turnoff2 nstrnum("RecordIntoPart"), 0, 1
+	; turn off this instrument itself
+	turnoff
+endin
+
+
+; this instrument's code *could* have gone in Master
+; but then we couldn't record the master audio channels with RecordIntoPart
+; due to Csound's instrument DSP precedence
+instr ClearAudioChannels
 ;
 			; clear master channels for the next a-rate loop iteration to accumulate into
 gamastersigl		= 0.0
@@ -1176,6 +1194,8 @@ instr BootUp
 
 			; turn on the master
 			turnon nstrnum("Master")
+			; make sure audio channels are cleared each a-rate loop
+			turnon nstrnum("ClearAudioChannels")
 
 			; limit the allocations of Recorder to 1
 			maxalloc "RecordIntoPart", 1
