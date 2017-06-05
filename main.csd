@@ -119,51 +119,46 @@ gamastersigr		init 0
 #define PART_DISTORTION_AMOUNT		#9#
 #define PART_TIMESTRETCH_FACTOR		#10#
 #define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205
-#define PART_STEP_NUDGE			#12#	; <--- unused 
-#define PART_GATE			#13#	; <--- unused
-#define PART_BUS_DESTINATION		#14#	; 0:  master, >0: fx bus
+#define PART_BUS_DESTINATION		#12#	; 0:  master, >0: fx bus
 ; part parameters - modulation 
-#define PART_AMP_ATTACK			#17#
-#define PART_AMP_DECAY			#18#
-#define PART_AMP_SUSTAIN_LEVEL		#19#
-#define PART_AMP_RELEASE		#20#
-#define PART_ENV1_ATTACK		#21#
-#define PART_ENV1_DECAY			#22#
-#define PART_ENV1_DEPTH			#23#
-#define PART_ENV1_DESTINATION		#24#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_AMP_ATTACK			#13#
+#define PART_AMP_DECAY			#14#
+#define PART_AMP_SUSTAIN_LEVEL		#15#
+#define PART_AMP_RELEASE		#16#
+#define PART_ENV1_ATTACK		#17#
+#define PART_ENV1_DECAY			#18#
+#define PART_ENV1_DEPTH			#19#
+#define PART_ENV1_DESTINATION		#20#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 
 ; fx send state
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND	#32#
 ;
-#define FX_SEND_INPUT_LEFT			#0# ; <--- currently unused (due to zak channel implementation below)
-#define FX_SEND_INPUT_RIGHT			#1# ; <---
+#define FX_SEND_EQ_GAIN_LOW			#0#
+#define FX_SEND_EQ_GAIN_MID			#1#
+#define FX_SEND_EQ_GAIN_HIGH			#2#
+#define FX_SEND_EQ_LOW_CORNER_FREQUENCY		#3#
+#define FX_SEND_EQ_MID_PEAKING_FREQUENCY	#4#
+#define FX_SEND_EQ_HIGH_CORNER_FREQUENCY	#5#
 ;
-#define FX_SEND_EQ_GAIN_LOW			#2#
-#define FX_SEND_EQ_GAIN_MID			#3#
-#define FX_SEND_EQ_GAIN_HIGH			#4#
-#define FX_SEND_EQ_LOW_CORNER_FREQUENCY		#5#
-#define FX_SEND_EQ_MID_PEAKING_FREQUENCY	#6#
-#define FX_SEND_EQ_HIGH_CORNER_FREQUENCY	#7#
+#define FX_SEND_DELAY_LEFT_TIME			#6#
+#define FX_SEND_DELAY_LEFT_FEEDBACK		#7#
+#define FX_SEND_DELAY_RIGHT_TIME		#8#
+#define FX_SEND_DELAY_RIGHT_FEEDBACK		#9#
+#define FX_SEND_DELAY_WET			#10#
+#define FX_SEND_RING_MOD_FREQUENCY		#11#
 ;
-#define FX_SEND_DELAY_LEFT_TIME			#8#
-#define FX_SEND_DELAY_LEFT_FEEDBACK		#9#
-#define FX_SEND_DELAY_RIGHT_TIME		#10#
-#define FX_SEND_DELAY_RIGHT_FEEDBACK		#11#
-#define FX_SEND_DELAY_WET			#12#
-#define FX_SEND_RING_MOD_FREQUENCY		#13#
+#define FX_SEND_REVERB_ROOM_SIZE		#12#
+#define FX_SEND_REVERB_DAMPING			#13#
+#define FX_SEND_REVERB_WET			#14#
+#define FX_SEND_BIT_REDUCTION			#15#
 ;
-#define FX_SEND_REVERB_ROOM_SIZE		#14#
-#define FX_SEND_REVERB_DAMPING			#15#
-#define FX_SEND_REVERB_WET			#16#
-#define FX_SEND_BIT_REDUCTION			#17#
-;
-#define FX_SEND_COMPRESSOR_RATIO		#18# 
-#define FX_SEND_COMPRESSOR_THRESHOLD		#19#
-#define FX_SEND_COMPRESSOR_ATTACK		#20#
-#define FX_SEND_COMPRESSOR_RELEASE		#21#
-#define FX_SEND_SIDE_CHAIN_SOURCE		#22#
-#define FX_SEND_GAIN				#23#
+#define FX_SEND_COMPRESSOR_RATIO		#16# 
+#define FX_SEND_COMPRESSOR_THRESHOLD		#17#
+#define FX_SEND_COMPRESSOR_ATTACK		#18#
+#define FX_SEND_COMPRESSOR_RELEASE		#19#
+#define FX_SEND_SIDE_CHAIN_SOURCE		#20#
+#define FX_SEND_GAIN				#21#
 
 
 ; master state 
@@ -218,7 +213,6 @@ instr +InitializePart
 			tabw_i 0.0			  , $PART_DETUNE_SPREAD           , iftablenumber
 			tabw_i 1                          , $PART_TIMESTRETCH_FACTOR      , iftablenumber
 			tabw_i 0.05                       , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
-			tabw_i 1                          , $PART_GATE                    , iftablenumber
 			tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
 			tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
 			
@@ -260,8 +254,6 @@ endin
 instr +InitializeFXSend
 
 	iftablenumber	init p4
-			tabw_i 0, $FX_SEND_INPUT_LEFT , iftablenumber
-			tabw_i 0, $FX_SEND_INPUT_RIGHT , iftablenumber
 			;
 			tabw_i 1, $FX_SEND_EQ_GAIN_LOW , iftablenumber	
 			tabw_i 1, $FX_SEND_EQ_GAIN_MID , iftablenumber	
@@ -608,8 +600,6 @@ ktimestretchfactor	tab   $PART_TIMESTRETCH_FACTOR      , ipartnumber
 itimestretchfactor	init i(ktimestretchfactor)
 ktimestretchwindowsize	tab   $PART_TIMESTRETCH_WINDOW_SIZE , ipartnumber
 itimestretchwindowsize	init i(ktimestretchwindowsize)
-;istepnudge		tab_i $PART_STEP_NUDGE              , ipartnumber
-;igate			tab_i $PART_GATE                    , ipartnumber
 			; -----------------------------------------------
 			; -- realtime editable modulation --
 kampattack		tab $PART_AMP_ATTACK                , ipartnumber
