@@ -265,8 +265,8 @@ instr +InitializeFXSend
 			tabw_i 1, $FX_SEND_EQ_GAIN_MID , iftablenumber	
 			tabw_i 1, $FX_SEND_EQ_GAIN_HIGH , iftablenumber	
 			tabw_i 180, $FX_SEND_EQ_LOW_CORNER_FREQUENCY , iftablenumber	
-			tabw_i 1000, $FX_SEND_EQ_MID_PEAKING_FREQUENY , iftablenumber	
-			tabw_i 9000, $FX_SEND_EQ_HIGH_CORNER_FREQUENY , iftablenumber	
+			tabw_i 1000, $FX_SEND_EQ_MID_PEAKING_FREQUENCY , iftablenumber	
+			tabw_i 9000, $FX_SEND_EQ_HIGH_CORNER_FREQUENCY , iftablenumber	
 			;
 			tabw_i 0.18, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
 			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
@@ -859,8 +859,8 @@ kfxsendeqgainlow	tab $FX_SEND_EQ_GAIN_LOW, iftablenumber
 kfxsendeqgainmid	tab $FX_SEND_EQ_GAIN_MID, iftablenumber	
 kfxsendeqgainhigh	tab $FX_SEND_EQ_GAIN_HIGH, iftablenumber	
 kfxsendeqlowcornerfrequency tab $FX_SEND_EQ_LOW_CORNER_FREQUENCY, iftablenumber	
-kfxsendeqmidpeakingfrequeny tab $FX_SEND_EQ_MID_PEAKING_FREQUENY, iftablenumber	
-kfxsendeqhighcornerfrequeny tab $FX_SEND_EQ_HIGH_CORNER_FREQUENY, iftablenumber	
+kfxsendeqmidpeakingfrequency tab $FX_SEND_EQ_MID_PEAKING_FREQUENCY, iftablenumber	
+kfxsendeqhighcornerfrequency tab $FX_SEND_EQ_HIGH_CORNER_FREQUENCY, iftablenumber	
 			;
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
 kdelayleftfeedback	tab $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
@@ -1164,7 +1164,7 @@ endin
 ; this instrument's code *could* have gone in Master
 ; but then we couldn't record the master audio channels with RecordIntoPart
 ; due to Csound's instrument DSP precedence
-instr ClearAudioChannels
+instr +ClearAudioChannels
 ;
 			; clear master channels for the next a-rate loop iteration to accumulate into
 gamastersigl		= 0.0
@@ -1235,7 +1235,7 @@ instr BootUp
 
 			; turn on the master
 			turnon nstrnum("Master")
-			; make sure audio channels are cleared each a-rate loop
+			; make sure audio channels are cleared after each a-rate loop
 			turnon nstrnum("ClearAudioChannels")
 
 			; limit the allocations of Recorder to 1
