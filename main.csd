@@ -1181,36 +1181,11 @@ instr BootUp
 			; turn on $MAX_NUMBER_OF_FX_SEND FXSend instruments
 			; and associate them with the proper ftables
 			;
-			;
-			; Alright.  Rant-time.
+			; NB. 'i' events with a -1 duration occurring more than once (on the same instrument)
+			; reinit the instrument and do not create new instances.
 			; 
-			; The code below looks odd (why is ifxsendinstrnum being incremented?).
-			; Well dear reader, it's because if you don't increment it 
-			; (which semantically creates seperate instruments), 
-			; the zak opcode won't work in FXSend.
-			;
-			; I hear you say:
-			; "B-But I thought the 'event' opcode *did* instantiate seperate instruments..."
-			;
-			; In fact, it does! ...and yet the zak opcode won't work regardless.
-			; You need the witchcraft I've written below.
-			;
-			; Who knows.  Fuck this language. I spent hours trying it figure it out.
-			; HOURS.
-			;
-			; Csound's documentation...
-			; regarding the zak opcodes is amazingly unhelpful (with literal contradictions
-			; regarding where you index for reading and writing into zak space).
-			; It says zak-space starts at 0 and goes to N, and in the very same 
-			; fucking demo csd file the provided code doesn't follow this convention 
-			; and get this...
-			; it fucking RUNS anyway!
-			;
-			;
-			; In summary. Fuck this language.  Fuck the parser for it.  Fuck its shitty
-			; macro system.  Fuck its dated assembler syntax.
-			; Fuck it
-			;
+			; In the loop below, if we *don't* specify which instrument instance, 
+			; only 1 FXSend will be instantiated using the p-values of the last iteration.
 			;
 	kfxsendftable	init $FX_SEND_FTABLE_OFFSET
 	ifxsendinstrnum = nstrnum("FXSend")
