@@ -78,7 +78,7 @@ nchnls	=	2
 ;
 ;
 
-; very important variables the enduser can modify
+; very important variables the enduser can modify (that can't change during runtime)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; osc network
 #define OSC_LISTEN_URL			#"/score"#
@@ -121,7 +121,7 @@ gamastersigr		init 0
 #define PART_DETUNE_SPREAD		#8#
 #define PART_DISTORTION_AMOUNT		#9#
 #define PART_TIMESTRETCH_FACTOR		#10#
-#define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205
+#define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205 (NB, if the factor isn't right, you won't here anything... not sure what determines what's right yet)
 #define PART_BUS_DESTINATION		#12#	; 0:  master, >0: fx bus
 ; part parameters - modulation 
 #define PART_AMP_ATTACK			#13#
@@ -215,7 +215,7 @@ instr +InitializePart
 			tabw_i 0.5                        , $PART_PAN                     , iftablenumber
 			tabw_i 0.0			  , $PART_DETUNE_SPREAD           , iftablenumber
 			tabw_i 1                          , $PART_TIMESTRETCH_FACTOR      , iftablenumber
-			tabw_i 0.05                       , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
+			tabw_i 0.002                      , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
 			tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
 			tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
 			
@@ -272,7 +272,7 @@ instr +InitializeFXSend
 			tabw_i 0, $FX_SEND_DELAY_WET , iftablenumber
 			tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
 			;
-			tabw_i 0.3, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
+			tabw_i 0.8, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
 			tabw_i 0.8, $FX_SEND_REVERB_DAMPING , iftablenumber
 			tabw_i 0, $FX_SEND_REVERB_WET , iftablenumber
 			tabw_i 0, $FX_SEND_BIT_REDUCTION , iftablenumber
@@ -680,6 +680,7 @@ irightchannel		init isamplenumber + 1
 				kline			line isampleoffset, itimestretchduration, 1
 				kloopstart		= kline
 				kloopend		= kline + itimestretchwindowsize
+				;printks "kloopstart: %f, kloopend: %f\n", 0.3, kloopstart, kloopend
 			endif
 
 			; determine detuned playback speed
@@ -953,7 +954,7 @@ endif
 ;
 #define LOWKNEE 	#48#		; * hard knee only *
 #define HIGHKNEE	#48#		;
-if (kcompressorratio >= 1) then
+if (kcompressorratio > 1) then
 	; compress it
 	asigl	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
 	asigr	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
@@ -1053,7 +1054,7 @@ endif
 ;
 #define LOWKNEE 	#48#		; * hard knee only *
 #define HIGHKNEE	#48#		;
-if (kmastercompressorratio >= 1) then
+if (kmastercompressorratio > 1) then
 	; compress it
 	gamastersigl	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
 	gamastersigr	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
