@@ -81,9 +81,9 @@ nchnls	=	2
 ; very important variables the enduser can modify
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; osc network
-gSosclistenurl				init "/score"
-giosclistenportnumber			init 5000
-giosclistenhandle			OSCinit giosclistenportnumber
+#define OSC_LISTEN_URL			#"/score"#
+#define OSC_LISTEN_PORT_NUMBER		#5000#
+giosclistenhandle			OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; define the maximum size of the system
 #define MAX_NUMBER_OF_PARTS		#128#
@@ -192,10 +192,10 @@ gamastersigr		init 0
 instr +OSCScoreListener
 Sscore			strcpy ""
 nextscore:
-kscorereceived		OSClisten giosclistenhandle, gSosclistenurl, "s", Sscore
-			if (kscorereceived == 0) kgoto donescore
-				printks "[OSC] received score:\n", 0
-				printks Sscore, 0
+kscorereceived		OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <--- the url argument *must* be a string literal
+			if (kscorereceived == 0) kgoto donescore                  ; I tried a global string variable but that didn't work
+				printks "[OSC] received score:\n", 0              ; therefore I've used a macro instead to have some semblance
+				printks Sscore, 0                                 ; of configurability... *sigh*
 				printks "\n", 0
 				scoreline Sscore, 1
 				kgoto nextscore
