@@ -86,7 +86,7 @@ nchnls	=	2
 giosclistenhandle			OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; define the maximum size of the system
-#define MAX_NUMBER_OF_PARTS		#128#
+#define MAX_NUMBER_OF_PARTS		#8#
 #define MAX_NUMBER_OF_FX_SEND		#2# ; <--- should not exceed 1000
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,55 +406,53 @@ endin
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; usage
-; asig PlayTable iftn, kpitch, ioffset, kloopsize
-;	where:	iftn is the ftable #
-;		kpitch is pitch ratio (0 - inf)
-;		ioffset   [0 - 1) start playback here
-;		kloopstart [0 - 1)
-;		kloopend [0 - 1) (kloopend == 0 means no-looping)
-;
-;	cool hack: turn into an even number x := x & (~1)
-opcode PlayTable, a, ikikk
-				setksmps 1
-iftn, kpitch, ioffset, kloopstart, kloopend	xin
-			asig	init 0
-
-		imaxtableindex	init tableng(iftn) - 1
-		kindex		init ioffset * imaxtableindex
-
-				; determine table index bounds
-				
-				; if looping
-				if ((kloopend > 0) && (kloopend < 1)) then
-					; calculate loop points
-					kloopstartindex   = (kloopstart > 0) ? kloopstart * imaxtableindex : 0
-					kloopendindex	  = (kloopend > kloopstart) ?  kloopend * imaxtableindex : imaxtableindex
-					koutofboundsindex = kloopendindex
-				; else not looping
-				else
-					koutofboundsindex = imaxtableindex
-				endif
-				
-				; if table index is within our determined bounds (looping or not)
-				if(kindex <= koutofboundsindex) then
-							; read table value
-					asig		tab int(kindex), iftn
-							; update index (according to pitch)	
-					kindex		+= (kpitch > 0) ? kpitch : 0.001
-				; else if out of bounds and looping?
-				elseif (kloopend > 0) then
-							; reset index to start of loop index
-					kindex		= kloopstartindex 
-				; else out of bounds and *not* looping
-				else
-							; output zeros
-					asig		= 0
-				endif
-
-				xout asig
+opcode PlayTable, a, ikikkk
+		;
+		setksmps 1
+		;
+iftn, kpitch, ioffset, kloopstart, kloopend, kreverse	xin
+		;
+	asig	init 0
+		;
+imaxtableindex	init tableng(iftn) - 1
+		; determine where the starting ftable index is
+		; the following finds the correct index for
+		; ~ forward playback with & without offset
+		; ~ reverse playback with offset
+		; but *not* reverse playback without offset (we have an edge case check for that)
+kindex		init ioffset * imaxtableindex
+		; handle reverse playback without offset
+		if(i(kreverse) != 0) then
+			kindex init imaxtableindex
+		endif
+		;	
+		; calculate loop points
+		kloopstartindex   = (kloopstart > 0) ? kloopstart * imaxtableindex : 0
+		kloopendindex	  = (kloopend > kloopstart) ?  kloopend * imaxtableindex : imaxtableindex
+		;
+		; read the value at our ftable index
+asig		tab int(kindex), iftn
+		;
+		; update our index (depending on playback direction and looping)
+		; handle forward playback
+		if(kreverse == 0) then
+			; move index by pitch amount forward
+			kindex	+= (kpitch > 0) ? kpitch : 0.001
+			; reset index if out of bounds
+			if(kindex > kloopendindex) then
+				kindex	= kloopstartindex
+			endif
+		; handle reverse playback
+		else
+			; move index by pitch amount backwards (reverse)
+			kindex	-= (kpitch > 0) ? kpitch : 0.001
+			; reset index if out of bounds
+			if(kindex < kloopstartindex) then
+				kindex	= kloopendindex
+			endif
+		endif
+		xout asig
 endop
-
 
 ; ADSR envelope which operates with k-rate arguments
 ; the existing envelop opcodes have only i-time arguments which won't suffice for realtime tweaking)
@@ -683,7 +681,6 @@ irightchannel		init isamplenumber + 1
 				kline			line isampleoffset, itimestretchduration, 1
 				kloopstart		= kline
 				kloopend		= kline + itimestretchwindowsize
-				;printks "kloopstart: %f, kloopend: %f\n", 0.3, kloopstart, kloopend
 			endif
 
 			; determine detuned playback speed
@@ -699,12 +696,12 @@ irandomoffsetl		init random(0, 0.001)
 irandomoffsetr		init random(0, 0.002)
 
 			; read (detuned) table data (for use in detune-spread effect)
-asigdetunedl		PlayTable ileftchannel , kdetunedplaybackspeed+kjitterl, isampleoffset+irandomoffsetl, kloopstart, kloopend
-asigdetunedr		PlayTable irightchannel, kdetunedplaybackspeed+kjitterr, isampleoffset+irandomoffsetr, kloopstart, kloopend
+asigdetunedl		PlayTable ileftchannel , kdetunedplaybackspeed+kjitterl, isampleoffset+irandomoffsetl, kloopstart, kloopend, kreverse
+asigdetunedr		PlayTable irightchannel, kdetunedplaybackspeed+kjitterr, isampleoffset+irandomoffsetr, kloopstart, kloopend, kreverse
 
 			; read table data (normally)
-asigl			PlayTable ileftchannel,  kplaybackspeed, isampleoffset, kloopstart, kloopend
-asigr			PlayTable irightchannel, kplaybackspeed, isampleoffset, kloopstart, kloopend
+asigl			PlayTable ileftchannel,  kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
+asigr			PlayTable irightchannel, kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
 
 			; check if we should apply detune spread while reading the ftables
 			if(kdetunespread > 0) then
