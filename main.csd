@@ -110,7 +110,7 @@ gamastersigr		init 0
 #define NUMBER_OF_PARAMETERS_PER_PART	#32#
 ; part parameter indices (we need indices because parts are just ftables... csound is low level bro, we doin' objects son)
 ; part parameters 
-#define PART_SAMPLE			#0#
+#define PART_SAMPLE			#0#	; <--- this holds the ftable index of the sample's mono (or left stereo) channel
 #define PART_PITCH			#1#
 #define PART_AMP			#2#
 #define PART_SAMPLE_OFFSET		#3#	; 0: start, 1: end
@@ -121,17 +121,18 @@ gamastersigr		init 0
 #define PART_DETUNE_SPREAD		#8#
 #define PART_DISTORTION_AMOUNT		#9#
 #define PART_TIMESTRETCH_FACTOR		#10#
-#define PART_TIMESTRETCH_WINDOW_SIZE	#11#	; nice window size? 0.002205 (NB, if the factor isn't right, you won't here anything... not sure what determines what's right yet)
-#define PART_BUS_DESTINATION		#12#	; 0:  master, >0: fx bus
+#define PART_TIMESTRETCH_WINDOW_SIZE	#11#
+#define PART_REVERSE			#12#	; 0: no reverse, !=0: reverse	
+#define PART_BUS_DESTINATION		#13#	; 0:  master, >0: fx bus
 ; part parameters - modulation 
-#define PART_AMP_ATTACK			#13#
-#define PART_AMP_DECAY			#14#
-#define PART_AMP_SUSTAIN_LEVEL		#15#
-#define PART_AMP_RELEASE		#16#
-#define PART_ENV1_ATTACK		#17#
-#define PART_ENV1_DECAY			#18#
-#define PART_ENV1_DEPTH			#19#
-#define PART_ENV1_DESTINATION		#20#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_AMP_ATTACK			#14#
+#define PART_AMP_DECAY			#15#
+#define PART_AMP_SUSTAIN_LEVEL		#16#
+#define PART_AMP_RELEASE		#17#
+#define PART_ENV1_ATTACK		#18#
+#define PART_ENV1_DECAY			#19#
+#define PART_ENV1_DEPTH			#20#
+#define PART_ENV1_DESTINATION		#21#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 
 ; fx send state
@@ -216,6 +217,7 @@ instr +InitializePart
 			tabw_i 0.0			  , $PART_DETUNE_SPREAD           , iftablenumber
 			tabw_i 1                          , $PART_TIMESTRETCH_FACTOR      , iftablenumber
 			tabw_i 0.002                      , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
+			tabw_i 0                          , $PART_REVERSE                 , iftablenumber
 			tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
 			tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
 			
@@ -588,6 +590,7 @@ kfiltertype		tab $PART_FILTER_TYPE               , ipartnumber
 kpan			tab $PART_PAN                       , ipartnumber 
 kdetunespread		tab $PART_DETUNE_SPREAD             , ipartnumber 
 kdistortionamount	tab $PART_DISTORTION_AMOUNT         , ipartnumber 
+kreverse		tab $PART_REVERSE                   , ipartnumber
 kbusdestination		tab $PART_BUS_DESTINATION           , ipartnumber
 			; -- realtime editable parameters
 			; -- but are i-values in the instrument therefore
@@ -659,7 +662,7 @@ kplaybackspeed		= isrfactor * kpitch
 
 			; initialize loop points (for PlayTable opcode) in case we want to timestretch
 kloopstart		init isampleoffset
-kloopend		init 0			; NB. iloopend == 0 ---> no looping
+kloopend		init 0
 
 
 			; determine which ftables our PlayTable opcode is reading from
