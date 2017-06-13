@@ -413,6 +413,8 @@ opcode PlayTable, a, ikikkk
 iftn, kpitch, ioffset, kloopstart, kloopend, kreverse	xin
 		;
 	asig	init 0
+		; this flags whether we've finished playing through an ftable (if there's no looping)
+kdoneplayback	init 0
 		;
 imaxtableindex	init tableng(iftn) - 1
 		; determine where the starting ftable index is
@@ -425,32 +427,55 @@ kindex		init ioffset * imaxtableindex
 		if(i(kreverse) != 0) then
 			kindex init imaxtableindex
 		endif
+		;
 		;	
 		; calculate loop points
 		kloopstartindex   = (kloopstart > 0) ? kloopstart * imaxtableindex : 0
 		kloopendindex	  = (kloopend > kloopstart) ?  kloopend * imaxtableindex : imaxtableindex
 		;
-		; read the value at our ftable index
-asig		tab int(kindex), iftn
+		; read the value at our ftable index (as long as playback hasn't finished)
+		if(kdoneplayback == 0) then
+			; ftable data (playback hasn't finished)
+			asig tab int(kindex), iftn
+		else
+			; 0s (playback finished)
+			asig = 0
+		endif
 		;
 		; update our index (depending on playback direction and looping)
 		; handle forward playback
 		if(kreverse == 0) then
+			printks "forward\n", 0.2
 			; move index by pitch amount forward
 			kindex	+= (kpitch > 0) ? kpitch : 0.001
-			; reset index if out of bounds
+			; if index is out of bounds
 			if(kindex > kloopendindex) then
+				printks "\treset\n", 0.2
+				; reset index to loop start / ftable start
 				kindex	= kloopstartindex
+				; if looping is off (and since we're out of bounds) flag this and output 0s
+				if(kloopstart == kloopend) then
+					kdoneplayback = 1
+				endif
 			endif
 		; handle reverse playback
 		else
+			printks "reverse\n", 0.2
 			; move index by pitch amount backwards (reverse)
 			kindex	-= (kpitch > 0) ? kpitch : 0.001
-			; reset index if out of bounds
+			; if index is out of bounds
 			if(kindex < kloopstartindex) then
+				printks "\treset\n", 0.2
+				; reset index to loop end / ftable end
 				kindex	= kloopendindex
+				; if looping is off (and since we're out of bounds) flag this and output 0s
+				if(kloopstart == kloopend) then
+					kdoneplayback = 1
+				endif
 			endif
 		endif
+		;
+		; output
 		xout asig
 endop
 
