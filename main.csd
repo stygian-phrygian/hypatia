@@ -445,12 +445,12 @@ kindex		init ioffset * imaxtableindex
 		; update our index (depending on playback direction and looping)
 		; handle forward playback
 		if(kreverse == 0) then
-			printks "forward\n", 0.2
+			printks "forward\n", 0
 			; move index by pitch amount forward
 			kindex	+= (kpitch > 0) ? kpitch : 0.001
 			; if index is out of bounds
 			if(kindex > kloopendindex) then
-				printks "\treset\n", 0.2
+				printks "\treset\n", 0
 				; reset index to loop start / ftable start
 				kindex	= kloopstartindex
 				; if looping is off (and since we're out of bounds) flag this and output 0s
@@ -460,12 +460,12 @@ kindex		init ioffset * imaxtableindex
 			endif
 		; handle reverse playback
 		else
-			printks "reverse\n", 0.2
+			printks "reverse\n", 0
 			; move index by pitch amount backwards (reverse)
 			kindex	-= (kpitch > 0) ? kpitch : 0.001
 			; if index is out of bounds
 			if(kindex < kloopstartindex) then
-				printks "\treset\n", 0.2
+				printks "\treset\n", 0
 				; reset index to loop end / ftable end
 				kindex	= kloopendindex
 				; if looping is off (and since we're out of bounds) flag this and output 0s
