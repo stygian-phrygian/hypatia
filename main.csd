@@ -30,7 +30,7 @@
 <CsInstruments>
 
 sr	=	44100 ; 48000 makes csound explode UNDERRUNS with -iadc for whatever reason
-ksmps	=	32
+ksmps	=	128
 nchnls	=	2
 0dbfs	=	1
 
@@ -118,12 +118,11 @@ gamastersigr		init 0
 #define PART_FILTER_RESONANCE		#5#
 #define PART_FILTER_TYPE		#6#	; 0: none, 1: lp, 2: hp, 3: bp
 #define PART_PAN			#7#
-#define PART_DETUNE_SPREAD		#8#
-#define PART_DISTORTION_AMOUNT		#9#
-#define PART_TIMESTRETCH_FACTOR		#10#
-#define PART_TIMESTRETCH_WINDOW_SIZE	#11#
-#define PART_REVERSE			#12#	; 0: no reverse, !=0: reverse	
-#define PART_BUS_DESTINATION		#13#	; 0:  master, >0: fx bus
+#define PART_DISTORTION_AMOUNT		#8#
+#define PART_TIMESTRETCH_FACTOR		#9#
+#define PART_TIMESTRETCH_WINDOW_SIZE	#10#
+#define PART_REVERSE			#11#	; 0: no reverse, !=0: reverse	
+#define PART_SEND_DESTINATION		#12#	; 0:  master, >0: fx send
 ; part parameters - modulation 
 #define PART_AMP_ATTACK			#14#
 #define PART_AMP_DECAY			#15#
@@ -202,6 +201,35 @@ kscorereceived		OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <---
 				kgoto nextscore
 donescore:
 endin
+;
+; Warning: the following "Setter" instruments 
+; do *no* bounds checking for invalid ftable numbers
+;
+
+instr +SetPartParameter
+ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
+ipartparameter		init p5
+iparametervalue		init p6
+			tabw_i iparametervalue, ipartparameter, ipartnumber
+			turnoff
+endin
+
+instr +SetFXSendParameter
+iftablenumber		init p4 + ($FX_SEND_FTABLE_OFFSET) - 1	; 1 - $MAX_NUMBER_OF_FX_SEND
+iparameter		init p5
+iparametervalue		init p6
+			tabw_i iparametervalue, iparameter, iftablenumber
+			turnoff
+endin
+
+instr +SetMasterParameter
+iftablenumber		init $MASTER_FTABLE_OFFSET 
+iparameter		init p4
+iparametervalue		init p5
+			tabw_i iparametervalue, iparameter, iftablenumber
+			turnoff
+endin
+
 
 instr +InitializePart
 
@@ -214,7 +242,6 @@ instr +InitializePart
 			tabw_i 0.2                        , $PART_FILTER_RESONANCE        , iftablenumber
 			tabw_i 0                          , $PART_FILTER_TYPE             , iftablenumber
 			tabw_i 0.5                        , $PART_PAN                     , iftablenumber
-			tabw_i 0.0			  , $PART_DETUNE_SPREAD           , iftablenumber
 			tabw_i 1                          , $PART_TIMESTRETCH_FACTOR      , iftablenumber
 			tabw_i 0.002                      , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
 			tabw_i 0                          , $PART_REVERSE                 , iftablenumber
@@ -404,13 +431,14 @@ inchnls		filenchnls Sfilename
 
 endin
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 opcode PlayTable, a, ikikkk
 		;
-		setksmps 1
-		;
 iftn, kpitch, ioffset, kloopstart, kloopend, kreverse	xin
+		;
+		setksmps 1
 		;
 	asig	init 0
 		; this flags whether we've finished playing through an ftable (if there's no looping)
@@ -424,57 +452,48 @@ imaxtableindex	init tableng(iftn) - 1
 		; but *not* reverse playback without offset (we have an edge case check for that)
 kindex		init ioffset * imaxtableindex
 		; handle reverse playback without offset
-		if(i(kreverse) != 0) then
+		if(i(kreverse) != 0 && ioffset == 0) then
 			kindex init imaxtableindex
 		endif
 		;
-		;	
 		; calculate loop points
-		kloopstartindex   = (kloopstart > 0) ? kloopstart * imaxtableindex : 0
-		kloopendindex	  = (kloopend > kloopstart) ?  kloopend * imaxtableindex : imaxtableindex
+		kloopstartindex   = (0 < kloopstart) ? kloopstart * imaxtableindex : 0
+		kloopendindex	  = (kloopstart < kloopend) ?  kloopend * imaxtableindex : imaxtableindex
 		;
 		; read the value at our ftable index (as long as playback hasn't finished)
-		if(kdoneplayback == 0) then
-			; ftable data (playback hasn't finished)
-			asig tab int(kindex), iftn
-		else
-			; 0s (playback finished)
-			asig = 0
-		endif
+		asig = (kdoneplayback == 0) ? tab(int(kindex), iftn) : rand(0.1)
+		if(kdoneplayback == 1) kgoto doneplayback
 		;
 		; update our index (depending on playback direction and looping)
 		; handle forward playback
 		if(kreverse == 0) then
-			printks "forward\n", 0
 			; move index by pitch amount forward
-			kindex	+= (kpitch > 0) ? kpitch : 0.001
+			kindex	+= kpitch
 			; if index is out of bounds
-			if(kindex > kloopendindex) then
-				printks "\treset\n", 0
+			if(kloopendindex < kindex) then
 				; reset index to loop start / ftable start
 				kindex	= kloopstartindex
-				; if looping is off (and since we're out of bounds) flag this and output 0s
+				; if looping is off (and since we're out of bounds) flag this
 				if(kloopstart == kloopend) then
 					kdoneplayback = 1
 				endif
 			endif
 		; handle reverse playback
 		else
-			printks "reverse\n", 0
 			; move index by pitch amount backwards (reverse)
-			kindex	-= (kpitch > 0) ? kpitch : 0.001
+			kindex	-= kpitch
 			; if index is out of bounds
 			if(kindex < kloopstartindex) then
-				printks "\treset\n", 0
 				; reset index to loop end / ftable end
 				kindex	= kloopendindex
-				; if looping is off (and since we're out of bounds) flag this and output 0s
+				; if looping is off (and since we're out of bounds) flag this
 				if(kloopstart == kloopend) then
 					kdoneplayback = 1
 				endif
 			endif
 		endif
 		;
+doneplayback:
 		; output
 		xout asig
 endop
@@ -555,36 +574,6 @@ kampattack, kampdecay, kampsustainlevel, kamprelease	xin
 						xout kampenvelope
 endop
 
-;
-; Warning: the following "Setter" instruments 
-; do *no* bounds checking for invalid ftable numbers
-;
-
-instr +SetPartParameter
-ipartnumber		init p4		; 1 - $MAX_NUMBER_OF_PARTS
-ipartparameter		init p5
-iparametervalue		init p6
-			tabw_i iparametervalue, ipartparameter, ipartnumber
-			turnoff
-endin
-
-instr +SetFXSendParameter
-iftablenumber		init p4 + ($FX_SEND_FTABLE_OFFSET) - 1	; 1 - $MAX_NUMBER_OF_FX_SEND
-iparameter		init p5
-iparametervalue		init p6
-			tabw_i iparametervalue, iparameter, iftablenumber
-			turnoff
-endin
-
-instr +SetMasterParameter
-iftablenumber		init $MASTER_FTABLE_OFFSET 
-iparameter		init p4
-iparametervalue		init p5
-			tabw_i iparametervalue, iparameter, iftablenumber
-			turnoff
-endin
-
-
 ; playback of a sample (ftable) with an existing part's state (which is also an ftable)
 instr +PlayPart
 
@@ -602,7 +591,7 @@ ipartnumber		init p4
 			; all the i-values can be edited during playback but won't reflect changes until the part is retriggered
 isamplenumber		tab_i $PART_SAMPLE , ipartnumber
 
-			prints "playing ftables: %d & %d on part # %d\n", isamplenumber, isamplenumber+1, ipartnumber
+			prints "[PlayPart] playing ftables: %d & %d on part # %d\n", isamplenumber, isamplenumber+1, ipartnumber
 
 			; -- realtime editable parameters --
 kpitch			tab $PART_PITCH			    , ipartnumber
@@ -611,10 +600,11 @@ kfiltercutoff		tab $PART_FILTER_CUTOFF             , ipartnumber
 kfilterresonance	tab $PART_FILTER_RESONANCE          , ipartnumber 
 kfiltertype		tab $PART_FILTER_TYPE               , ipartnumber 
 kpan			tab $PART_PAN                       , ipartnumber 
-kdetunespread		tab $PART_DETUNE_SPREAD             , ipartnumber 
 kdistortionamount	tab $PART_DISTORTION_AMOUNT         , ipartnumber 
+kreverse		init tab_i($PART_REVERSE, ipartnumber) ;<--- this was a massive bug, apparently we need to init this lest PlayPart & PlayTable wouldn't receive the correct updated value
+							       ;<--- we might need to do this to the other part parameters too
 kreverse		tab $PART_REVERSE                   , ipartnumber
-kbusdestination		tab $PART_BUS_DESTINATION           , ipartnumber
+ksenddestination	tab $PART_SEND_DESTINATION          , ipartnumber
 			; -- realtime editable parameters
 			; -- but are i-values in the instrument therefore
 			; -- changing them causes instrument reinitialization
@@ -708,34 +698,13 @@ irightchannel		init isamplenumber + 1
 				kloopend		= kline + itimestretchwindowsize
 			endif
 
-			; determine detuned playback speed
-kdetunedplaybackspeed	= kplaybackspeed + (kdetunespread * 0.059463094)	; 1.059463094 ~ 2**(1/12)
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-			; create left and right pitch playback jitter
-kjitteramp		= 0.0007 * kdetunespread
-kjitterl		jitter kjitteramp, 0.04, 0.80
-kjitterr		jitter kjitteramp, 0.02, 0.58
-
-			; create a random table offset for left and right channels
-irandomoffsetl		init random(0, 0.001)
-irandomoffsetr		init random(0, 0.002)
-
-			; read (detuned) table data (for use in detune-spread effect)
-asigdetunedl		PlayTable ileftchannel , kdetunedplaybackspeed+kjitterl, isampleoffset+irandomoffsetl, kloopstart, kloopend, kreverse
-asigdetunedr		PlayTable irightchannel, kdetunedplaybackspeed+kjitterr, isampleoffset+irandomoffsetr, kloopstart, kloopend, kreverse
-
-			; read table data (normally)
+			; read table data 
 asigl			PlayTable ileftchannel,  kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
 asigr			PlayTable irightchannel, kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
-
-			; check if we should apply detune spread while reading the ftables
-			if(kdetunespread > 0) then
-					; mix detuned & jittered signals with normal playback signals
-				asigl	= (asigl * 0.4) + (asigdetunedl * 0.6)
-				asigr	= (asigr * 0.4) + (asigdetunedr * 0.6)
-
-			endif
-
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 			;filter 
 ;
@@ -821,15 +790,15 @@ asigr			*= kampenvelope
 			endif
 
 			; output on either master or one of the fxsends
-			; kbusdestination <  1         ---> master
-			; kbusdestination >= 1 & < 2   ---> fxsend 1
-			; kbusdestination >= 2 & < 3   ---> fxsend 2
+			; send <  1         ---> master
+			; send >= 1 & < 2   ---> fxsend 1
+			; send >= 2 & < 3   ---> fxsend 2
 			; etc...
-			if(kbusdestination >= 1) then
+			if(ksenddestination >= 1) then
 				; NB. can't use 'tabw' because its 3rd argument 
 				; only operates at i-rate (and we need k-rate)
 				; hence we have to resort to zak channels
-				kleftzakchannel		= int((kbusdestination - 1 ) * 2)
+				kleftzakchannel		= int((ksenddestination - 1 ) * 2)
 				krightzakchannel	= kleftzakchannel + 1
 				zawm asigl, kleftzakchannel
 				zawm asigr, krightzakchannel
