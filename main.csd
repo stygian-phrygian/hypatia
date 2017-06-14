@@ -144,24 +144,30 @@ gamastersigr		init 0
 #define FX_SEND_EQ_MID_PEAKING_FREQUENCY	#4#
 #define FX_SEND_EQ_HIGH_CORNER_FREQUENCY	#5#
 ;
-#define FX_SEND_DELAY_LEFT_TIME			#6#
-#define FX_SEND_DELAY_LEFT_FEEDBACK		#7#
-#define FX_SEND_DELAY_RIGHT_TIME		#8#
-#define FX_SEND_DELAY_RIGHT_FEEDBACK		#9#
-#define FX_SEND_DELAY_WET			#10#
-#define FX_SEND_RING_MOD_FREQUENCY		#11#
+#define FX_SEND_CHORUS_DELAY_TIME		#6#
+#define FX_SEND_CHORUS_DEPTH			#7#
+#define FX_SEND_CHORUS_RATE			#8#
+#define FX_SEND_CHORUS_FEEDBACK			#9#
+#define FX_SEND_CHORUS_WET			#10#
 ;
-#define FX_SEND_REVERB_ROOM_SIZE		#12#
-#define FX_SEND_REVERB_DAMPING			#13#
-#define FX_SEND_REVERB_WET			#14#
-#define FX_SEND_BIT_REDUCTION			#15#
+#define FX_SEND_DELAY_LEFT_TIME			#11#
+#define FX_SEND_DELAY_LEFT_FEEDBACK		#12#
+#define FX_SEND_DELAY_RIGHT_TIME		#13#
+#define FX_SEND_DELAY_RIGHT_FEEDBACK		#14#
+#define FX_SEND_DELAY_WET			#15#
+#define FX_SEND_RING_MOD_FREQUENCY		#16#
 ;
-#define FX_SEND_COMPRESSOR_RATIO		#16# 
-#define FX_SEND_COMPRESSOR_THRESHOLD		#17#
-#define FX_SEND_COMPRESSOR_ATTACK		#18#
-#define FX_SEND_COMPRESSOR_RELEASE		#19#
-#define FX_SEND_SIDE_CHAIN_SOURCE		#20#
-#define FX_SEND_GAIN				#21#
+#define FX_SEND_REVERB_ROOM_SIZE		#17#
+#define FX_SEND_REVERB_DAMPING			#18#
+#define FX_SEND_REVERB_WET			#19#
+#define FX_SEND_BIT_REDUCTION			#20#
+;
+#define FX_SEND_COMPRESSOR_RATIO		#21# 
+#define FX_SEND_COMPRESSOR_THRESHOLD		#22#
+#define FX_SEND_COMPRESSOR_ATTACK		#23#
+#define FX_SEND_COMPRESSOR_RELEASE		#24#
+#define FX_SEND_SIDE_CHAIN_SOURCE		#25#
+#define FX_SEND_GAIN				#26#
 
 
 ; master state 
@@ -293,6 +299,12 @@ instr +InitializeFXSend
 			tabw_i 180, $FX_SEND_EQ_LOW_CORNER_FREQUENCY , iftablenumber	
 			tabw_i 1000, $FX_SEND_EQ_MID_PEAKING_FREQUENCY , iftablenumber	
 			tabw_i 9000, $FX_SEND_EQ_HIGH_CORNER_FREQUENCY , iftablenumber	
+			;
+			tabw_i 0.01, $FX_SEND_CHORUS_DELAY_TIME , iftablenumber
+			tabw_i 0.005, $FX_SEND_CHORUS_DEPTH , iftablenumber
+			tabw_i 1, $FX_SEND_CHORUS_RATE , iftablenumber
+			tabw_i 0, $FX_SEND_CHORUS_FEEDBACK , iftablenumber
+			tabw_i 0, $FX_SEND_CHORUS_WET , iftablenumber
 			;
 			tabw_i 0.18, $FX_SEND_DELAY_LEFT_TIME , iftablenumber
 			tabw_i 0.5, $FX_SEND_DELAY_LEFT_FEEDBACK , iftablenumber
@@ -461,8 +473,8 @@ kindex		init ioffset * imaxtableindex
 		kloopendindex	  = (kloopstart < kloopend) ?  kloopend * imaxtableindex : imaxtableindex
 		;
 		; read the value at our ftable index (as long as playback hasn't finished)
-		asig = (kdoneplayback == 0) ? tab(int(kindex), iftn) : rand(0.1)
-		if(kdoneplayback == 1) kgoto doneplayback
+		asig = (kdoneplayback == 0) ? tab(int(kindex), iftn) : 0
+		if(kdoneplayback == 1) kgoto doneplayback ; <--- is this necessary? maybe we should check for looping too (so we can re-loop during live performance)
 		;
 		; update our index (depending on playback direction and looping)
 		; handle forward playback
@@ -845,6 +857,12 @@ kfxsendeqlowcornerfrequency tab $FX_SEND_EQ_LOW_CORNER_FREQUENCY, iftablenumber
 kfxsendeqmidpeakingfrequency tab $FX_SEND_EQ_MID_PEAKING_FREQUENCY, iftablenumber	
 kfxsendeqhighcornerfrequency tab $FX_SEND_EQ_HIGH_CORNER_FREQUENCY, iftablenumber	
 			;
+kchorusdelaytime	tab $FX_SEND_CHORUS_DELAY_TIME, iftablenumber
+kchorusdepth		tab $FX_SEND_CHORUS_DEPTH, iftablenumber
+kchorusrate		tab $FX_SEND_CHORUS_RATE, iftablenumber
+kchorusfeedback		tab $FX_SEND_CHORUS_FEEDBACK, iftablenumber
+kchoruswet		tab $FX_SEND_CHORUS_WET, iftablenumber
+			;
 kdelaylefttime		tab $FX_SEND_DELAY_LEFT_TIME, iftablenumber
 kdelayleftfeedback	tab $FX_SEND_DELAY_LEFT_FEEDBACK, iftablenumber
 kdelayrighttime		tab $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
@@ -884,6 +902,32 @@ asigl	pareq asigl, kfxsendeqhighcornerfrequency, kfxsendeqgainhigh, $NO_RESONANC
 asigr	pareq asigr, kfxsendeqhighcornerfrequency, kfxsendeqgainhigh, $NO_RESONANCE, $HIGH_SHELVING
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; chorus
+;
+#define			MAX_CHORUS_DELAY_TIME #0.5#
+;
+			if(kchoruswet <= 0) kgoto donechorus
+;
+kchorusdelaytimelfo	oscil kchorusdepth, kchorusrate, -1, 0.0
+;
+;			left channel chorus delay
+achorusdelaybufferl	delayr $MAX_CHORUS_DELAY_TIME 
+asigchorusdelayl	deltapi kchorusdelaytime + kchorusdelaytimelfo
+			delayw asigl + (asigchorusdelayl * kchorusfeedback)
+;
+;			right channel chorus delay
+achorusdelaybufferr	delayr $MAX_CHORUS_DELAY_TIME 
+asigchorusdelayr	deltapi kchorusdelaytime + kchorusdelaytimelfo
+			delayw asigr + (asigchorusdelayr * kchorusfeedback)
+;
+;			delay wetness
+kchorusdry		= (1 - kchoruswet)
+asigl			= (kchorusdry * asigl) + (kchoruswet * asigchorusdelayl)
+asigr			= (kchorusdry * asigr) + (kchoruswet * asigchorusdelayr)
+;
+donechorus:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ring modulation
 ;
 if (kringmodfrequency > 0) then
@@ -915,6 +959,9 @@ asigr		= (kdelaydry * asigr) + (kdelaywet * asigdelayr)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
 ;
+;
+				if(kreverbwet <= 0) kgoto donereverb
+;
 ; duplicate signals for denorm opcode (denorm improves efficiency)
 asigreverbinl			= asigl
 asigreverbinr			= asigr
@@ -929,6 +976,8 @@ asigreverboutl, asigreverboutr	reverbsc asigreverbinl, asigreverbinr, kreverbroo
 kreverbdry	= (1.0 - kreverbwet)
 asigl		= (kreverbdry * asigl) + (kreverbwet * asigreverboutl)
 asigr		= (kreverbdry * asigr) + (kreverbwet * asigreverboutr)
+;
+donereverb:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; bitcrusher
