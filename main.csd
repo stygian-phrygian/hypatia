@@ -166,7 +166,7 @@ gamastersigr		init 0
 #define FX_SEND_COMPRESSOR_THRESHOLD		#22#
 #define FX_SEND_COMPRESSOR_ATTACK		#23#
 #define FX_SEND_COMPRESSOR_RELEASE		#24#
-#define FX_SEND_SIDE_CHAIN_SOURCE		#25#
+#define FX_SEND_COMPRESSOR_GAIN 		#25#
 #define FX_SEND_GAIN				#26#
 
 
@@ -187,7 +187,8 @@ gamastersigr		init 0
 #define MASTER_COMPRESSOR_THRESHOLD	 #11#
 #define MASTER_COMPRESSOR_ATTACK	 #12#
 #define MASTER_COMPRESSOR_RELEASE	 #13#
-#define MASTER_GAIN			 #14#
+#define MASTER_COMPRESSOR_GAIN		 #14#
+#define MASTER_GAIN			 #15#
 
 ; instrument which listens for score data
 ;
@@ -322,7 +323,7 @@ instr +InitializeFXSend
 			tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD , iftablenumber
 			tabw_i 0.1, $FX_SEND_COMPRESSOR_ATTACK , iftablenumber
 			tabw_i 0.2, $FX_SEND_COMPRESSOR_RELEASE , iftablenumber
-			tabw_i 0, $FX_SEND_SIDE_CHAIN_SOURCE , iftablenumber
+			tabw_i 1, $FX_SEND_COMPRESSOR_GAIN , iftablenumber
 			tabw_i 1, $FX_SEND_GAIN , iftablenumber
 			
 			prints "initialized FXSend on ftable # %d\n", iftablenumber
@@ -377,6 +378,7 @@ instr +InitializeMaster
 			tabw_i 0, $MASTER_COMPRESSOR_THRESHOLD , iftablenumber
 			tabw_i 0, $MASTER_COMPRESSOR_ATTACK , iftablenumber
 			tabw_i 0, $MASTER_COMPRESSOR_RELEASE , iftablenumber
+			tabw_i 1, $MASTER_COMPRESSOR_GAIN , iftablenumber
 			tabw_i 1, $MASTER_GAIN , iftablenumber
 			
 			prints "initialized Master on ftable # %d\n", iftablenumber
@@ -474,7 +476,7 @@ kindex		init ioffset * imaxtableindex
 		;
 		; read the value at our ftable index (as long as playback hasn't finished)
 		asig = (kdoneplayback == 0) ? tab(int(kindex), iftn) : 0
-		if(kdoneplayback == 1) kgoto doneplayback ; <--- is this necessary? maybe we should check for looping too (so we can re-loop during live performance)
+		if(kdoneplayback == 1) kgoto doneplayback ; <--- maybe we should check for looping too (so we can restart playback during live performance)
 		;
 		; update our index (depending on playback direction and looping)
 		; handle forward playback
@@ -879,7 +881,7 @@ kcompressorratio	tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 kcompressorthreshold	tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
 kcompressorattack	tab $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
 kcompressorrelease	tab $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
-kcompressorsidechainsource tab $FX_SEND_SIDE_CHAIN_SOURCE, iftablenumber
+kcompressorgain		tab $FX_SEND_COMPRESSOR_GAIN, iftablenumber
 kgain			tab $FX_SEND_GAIN, iftablenumber
 
 ; apply effects now
@@ -925,7 +927,7 @@ kchorusdry		= (1 - kchoruswet)
 asigl			= (kchorusdry * asigl) + (kchoruswet * asigchorusdelayl)
 asigr			= (kchorusdry * asigr) + (kchoruswet * asigchorusdelayr)
 ;
-donechorus:
+			donechorus:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ring modulation
@@ -977,7 +979,7 @@ kreverbdry	= (1.0 - kreverbwet)
 asigl		= (kreverbdry * asigl) + (kreverbwet * asigreverboutl)
 asigr		= (kreverbdry * asigr) + (kreverbwet * asigreverboutr)
 ;
-donereverb:
+				donereverb:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; bitcrusher
@@ -1002,8 +1004,8 @@ if (kcompressorratio > 1) then
 	asigl	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
 	asigr	compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
 	; apply post gain
-	;asigl	*= kcompressorpostgain
-	;asigr	*= kcompressorpostgain
+	asigl	*= kcompressorgain
+	asigr	*= kcompressorgain
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1040,6 +1042,7 @@ kmastercompressorratio		tab $MASTER_COMPRESSOR_RATIO, iftablenumber
 kmastercompressorthreshold	tab $MASTER_COMPRESSOR_THRESHOLD, iftablenumber
 kmastercompressorattack		tab $MASTER_COMPRESSOR_ATTACK, iftablenumber
 kmastercompressorrelease	tab $MASTER_COMPRESSOR_RELEASE, iftablenumber
+kmastercompressorgain		tab $MASTER_COMPRESSOR_GAIN, iftablenumber
 kmastergain			tab $MASTER_GAIN, iftablenumber
 
 
@@ -1065,6 +1068,7 @@ gamastersigr	pareq gamastersigr, kmastereqhighcornerfrequency, kmastereqgainhigh
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
 ;
+						if(kmasterreverbwet <= 0) kgoto donemasterreverb
 ; duplicate signals for denorm opcode (denorm improves efficiency)
 amastersigreverbinl				= gamastersigl
 amastersigreverbinr				= gamastersigr
@@ -1078,7 +1082,7 @@ amastersigreverboutl, amastersigreverboutr	reverbsc amastersigreverbinl, amaster
 kmasterreverbdry				= (1.0 - kmasterreverbwet)
 gamastersigl					= (kmasterreverbdry * gamastersigl) + (kmasterreverbwet * amastersigreverboutl)
 gamastersigr					= (kmasterreverbdry * gamastersigr) + (kmasterreverbwet * amastersigreverboutr)
-
+						donemasterreverb:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; bitcrusher
 ;
@@ -1101,6 +1105,9 @@ if (kmastercompressorratio > 1) then
 	; compress it
 	gamastersigl	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
 	gamastersigr	compress gamastersigl, gamastersigl+0.0001, kmastercompressorthreshold, $LOWKNEE , $HIGHKNEE , kmastercompressorratio, kmastercompressorattack, kmastercompressorrelease, 0
+	; apply post gain
+	gamastersigl	*= kmastercompressorgain
+	gamastersigr	*= kmastercompressorgain
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
