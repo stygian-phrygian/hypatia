@@ -128,10 +128,10 @@ gamastersigr		init 0
 #define PART_AMP_DECAY			#14#
 #define PART_AMP_SUSTAIN_LEVEL		#15#
 #define PART_AMP_RELEASE		#16#
-#define PART_ENV0_ATTACK		#18#
-#define PART_ENV0_DECAY			#19#
-#define PART_ENV0_DEPTH			#20#
-#define PART_ENV0_DESTINATION		#21#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_ENV1_ATTACK		#18#
+#define PART_ENV1_DECAY			#19#
+#define PART_ENV1_DEPTH			#20#
+#define PART_ENV1_DESTINATION		#21#	; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 
 ; fx send state
