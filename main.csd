@@ -459,50 +459,99 @@ iftn, kpitch, ioffset, kloopstart, kloopend, kreverse	xin
 kdoneplayback	init 0
 		;
 imaxtableindex	init tableng(iftn) - 1
-		; determine where the starting ftable index is
-		; the following finds the correct index for
-		; ~ forward playback with & without offset
-		; ~ reverse playback with offset
-		; but *not* reverse playback without offset (we have an edge case check for that)
-kindex		init ioffset * imaxtableindex
-		; handle reverse playback without offset
-		if(i(kreverse) != 0 && ioffset == 0) then
-			kindex init imaxtableindex
+		;
+		; initialize phase accumulator from our initial offset
+		if(0 <= ioffset && ioffset <= 1) then
+			kphase	init ioffset * imaxtableindex
+			; handle edge case with reverse playback and 0 offset
+			if(i(kreverse) != 0 && ioffset == 0) then
+				kphase init imaxtableindex
+			endif
+		else
+			; otherwise start phase at 0 in forward playback
+			if(i(kreverse) == 0) then
+				kphase init 0
+			; or phase at imaxtableindex in reverse playback
+			else
+				kphase init imaxtableindex
+			endif
 		endif
 		;
-		; calculate loop points
-		kloopstartindex   = (0 < kloopstart) ? kloopstart * imaxtableindex : 0
-		kloopendindex	  = (kloopstart < kloopend) ?  kloopend * imaxtableindex : imaxtableindex
+		; determine if we are currently looping
+kloopsize	= kloopend - kloopstart
 		;
-		; read the value at our ftable index (as long as playback hasn't finished)
-		asig = (kdoneplayback == 0) ? tab(int(kindex), iftn) : 0
-		if(kdoneplayback == 1) kgoto doneplayback ; <--- maybe we should check for looping too (so we can restart playback during live performance)
+		; if we are looping
+		if (kloopsize > 0) then
+			; set looping flag "true"
+			klooping	= 1
+			; calculate loop points
+			kloopstartindex	= kloopstart * imaxtableindex
+			kloopendindex	= kloopend * imaxtableindex
+		else
+			; set looping flag "false"
+			klooping	= 0
+			; otherwise provide normal boundaries (we won't loop anyway though)
+			kloopstartindex	= 0
+			kloopendindex	= imaxtableindex
+		endif
 		;
-		; update our index (depending on playback direction and looping)
+		; skip to end if we've finished playback
+		if(kdoneplayback == 1) kgoto doneplayback ; <--- check for looping too?
+		;
+		; convert the phase accumulator into an integer index into our sample
+kindex		= int(kphase)
+		;
+		; check that the converted integer table index is valid
+		if((0 <= kindex) && (kindex <= imaxtableindex)) then
+			; read a value if it's valid
+			asig = tab(kindex, iftn)
+		else
+			; otherwise return 0
+			asig = 0
+		endif
+		;
+		; update our phase accumulator (depending on playback direction and looping)
+		;
 		; handle forward playback
 		if(kreverse == 0) then
-			; move index by pitch amount forward
-			kindex	+= kpitch
-			; if index is out of bounds
-			if(kloopendindex < kindex) then
-				; reset index to loop start / ftable start
-				kindex	= kloopstartindex
-				; if looping is off (and since we're out of bounds) flag this
-				if(kloopstart == kloopend) then
-					kdoneplayback = 1
+			; move phase accumulator by pitch amount forward
+			kphase	+= kpitch
+			; if we are (forwards) looping
+			if (klooping == 1) then
+				; check that we haven't gone past the loop bounds
+				if(kphase > kloopendindex) then
+					; reset index to loop start
+					kphase	= kloopstartindex
+				endif
+			; else we aren't looping
+			else
+				; if our index went past the maximum table index
+				if(kphase > imaxtableindex) then
+					; flag that we're done playback
+					kdoneplayback	= 1
+					; set output to 0 from now on
+					asig		= 0
 				endif
 			endif
 		; handle reverse playback
 		else
-			; move index by pitch amount backwards (reverse)
-			kindex	-= kpitch
-			; if index is out of bounds
-			if(kindex < kloopstartindex) then
-				; reset index to loop end / ftable end
-				kindex	= kloopendindex
-				; if looping is off (and since we're out of bounds) flag this
-				if(kloopstart == kloopend) then
-					kdoneplayback = 1
+			; move phase accumulator by pitch amount in reverse
+			kphase	-= kpitch
+			; if we are (reverse) looping
+			if (klooping == 1) then
+				; check that we haven't gone past the loop bounds
+				if(kphase < kloopstartindex) then
+					; reset index to loop start (which is the loop endpoint in reverse mode)
+					kphase	= kloopendindex
+				endif
+			; else we aren't looping
+			else
+				; if our index went past the 0 table index (remember this is reverse)
+				if(kphase < 0) then
+					; flag that we're done playback
+					kdoneplayback	= 1
+					; set output to 0 from now on
+					asig		= 0
 				endif
 			endif
 		endif
@@ -708,9 +757,9 @@ irightchannel		init isamplenumber + 1
 
 							; modulate sample looppoints to simulate (shitty) timestretch effect
 				kline			line isampleoffset, itimestretchduration, 1
-				kloopstart		= kline
-				kloopend		= kline + itimestretchwindowsize
-			endif
+				kloopstart		= kline - itimestretchwindowsize ; <--- is this a bug?
+				kloopend		= kline                          ; must we account
+			endif								 ; for windowsize effect on time
 
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
