@@ -50,22 +50,19 @@ nchnls	=	2
 ; it's an effect bus common to most analog mixers.  Multiple
 ; parts can route the audio simultaneously to one.
 ; An FXSend instrument has a corresponding ftable to hold its state.
-; The current DSP chain is: delay -> ringmod -> reverb -> bitcrusher -> compressor
+; The current DSP chain is: 
+;     3-band EQ -> chorus -> delay -> ringmod -> reverb -> bitcrusher -> compressor -> gain
 ;
 ; All FXSends route to Master.  Master also has a DSP chain too.
-; The current DSP chain is: equalizer -> reverb -> compressor
-;
-; A project is a collection of sample files in a directory which
-; this application knows how to reassign to Parts.
-; There can be a max of $MAX_NUMBER_OF_PARTS samples per project.
+; The current Master DSP chain is: 
+;     3-band EQ -> reverb -> -> bitcrusher -> compressor -> gain
 ;
 ; "PlayPart" is responsible for initiating sample playback.  It takes a 
 ; Part# (which is an ftable#) to play a sample on (which is itself an ftable#).
 ; It routes to an FXSend or Master.
 ;
 ; Samples, Parts, FXSends, and Master are represented by ftables so we must be careful of
-; incorrect indexing when PlayPart is called.  Ftables are laid out in
-; in memory thusly:
+; incorrect indexing.  Ftables are laid out in in memory thusly:
 ;
 ; Ftable #:
 ; [1-128]   : Parts
