@@ -14,16 +14,13 @@
 <CsoundSynthesizer>
 <CsOptions>
 ; Select audio/midi flags here according to platform
-;;-odac   -i adc:hw:1,0   ;;;realtime audio I/O
-;;-odac   -i adc:hw:2,0  ;;;realtime audio I/O
-;;-odac -+rtaudio=alsa -i adc:hw:2,0
-;;-odac -iadc:hw:2,0
-
-; realtime output
+; example:
+; -odac          ; realtime output
+; -+rtaudio=alsa ; using a different audio lib
+; -i adc:hw:2,0  ; realtime input with specifics (my zoom h2n usb microphone)
+;
 -odac
-; realtime input (will need configuring)
 -iadc
-;-iadc:hw:2,0 ; (my zoom h2n usb microphone)
 
 </CsOptions>
 <CsInstruments>
