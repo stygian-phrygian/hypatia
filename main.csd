@@ -1,16 +1,3 @@
-
-; This is a sampler
-; It records sounds
-; It plays back those sounds
-; It can load existing sound files (.wavs) and play them too
-; It can tweak sounds during playback
-; It can also send the sounds to effects busses
-; It can tweak the effects during playback too
-; It uses OSC for controlling all this (MIDI is fun but too limited)
-; It listens for csound score data on
-;     OSC port number (default 5000)
-;     OSC url (default '/score')
-
 <CsoundSynthesizer>
 <CsOptions>
 ; Select audio/midi flags here according to platform
@@ -24,55 +11,37 @@
 
 </CsOptions>
 <CsInstruments>
-
-sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc for whatever reason
+sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc (on my system) for whatever reason
 ksmps  = 128
 nchnls = 2
 0dbfs  = 1
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; A note regarding ftables
 ;
-; Terminology:
 ;
-; A Sample is an audio recording.  In Csound this is represented as a pair
-; of ftables (due to implentation details below) ie left and right stereo
-; channels or a duplication of a mono channel.
-
-; A "Part" represents a group of parameters relevant for sample playback.
-; A part is an ftable.
+; Samples, Parts, FXSends, and the Master are internally all represented as ftables.
+; Yep.
+; Samples are represented as ftable pairs (ie left/right or duplicate mono channels).
+; Parts, FXSends, and the Master all have state which needed to be realtime editable.
+; Thus, they are also represented each with an ftable.
+; An enduser needn't concern himself with this (as the instrument "API" hides these details), nonetheless
+; ftables are indexed thusly:
 ;
-; An FXSend represents a group of parameters relevant for further
-; sonic alteration (after the Part processes the audio). In other words,
-; it's an effect bus common to most analog mixers.  Multiple
-; parts can route the audio simultaneously to one.
-; An FXSend instrument has a corresponding ftable to hold its state.
-; The current DSP chain is:
-;     3-band EQ -> chorus -> delay -> ringmod -> reverb -> bitcrusher -> compressor -> gain
-;
-; All FXSends route to Master.  Master also has a DSP chain.
-; The current Master DSP chain is:
-;     3-band EQ -> reverb -> -> bitcrusher -> compressor -> gain
-;
-; "PlayPart" is responsible for initiating sample playback.  It takes a
-; Part# (which is an ftable#) to play a sample on (which is itself an ftable#).
-; It routes to an FXSend or Master.
-;
-; Samples, Parts, FXSends, and Master are represented by ftables so we must be careful of
-; incorrect indexing.  Ftables are laid out in in memory thusly:
-;
-; Ftable #:
+; ftable #s:
 ; [1-128]   : Parts
 ; [129-130] : FXSends
 ; [131]     : Master
 ; [131-N]   : Sample Ftables [mono pairs]
 ;
-; assuming MAX_NUMBER_OF_PARTS == 128
+; assuming:
+;     MAX_NUMBER_OF_PARTS   == 128
 ;     MAX_NUMBER_OF_FX_SEND == 2
 ;
 ;
 
-; very important variables the enduser can modify (that can't change during runtime)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; very important variables the enduser can modify (that can't change during runtime)
+;
 ; osc network
 #define OSC_LISTEN_URL                      #"/score"#
 #define OSC_LISTEN_PORT_NUMBER              #5000#
@@ -92,12 +61,11 @@ giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
 #define NUMBER_OF_ZAK_AUDIO_CHANNELS        #2 * $MAX_NUMBER_OF_FX_SEND#
 #define zak_dummy_variable                  #$NUMBER_OF_ZAK_AUDIO_CHANNELS#
-zakinit ($NUMBER_OF_ZAK_AUDIO_CHANNELS) , ($zak_dummy_variable)
+                                            zakinit ($NUMBER_OF_ZAK_AUDIO_CHANNELS) , ($zak_dummy_variable)
 
 ; master audio left & right
-gamastersigl init 0
-gamastersigr init 0
-
+gamastersigl                                init 0
+gamastersigr                                init 0
 
 ; part state
 #define NUMBER_OF_PARAMETERS_PER_PART       #32#
@@ -125,7 +93,6 @@ gamastersigr init 0
 #define PART_ENV1_DECAY                     #19#
 #define PART_ENV1_DEPTH                     #20#
 #define PART_ENV1_DESTINATION               #21# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
-
 
 ; fx send state
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND    #32#
@@ -182,6 +149,7 @@ gamastersigr init 0
 #define MASTER_COMPRESSOR_GAIN              #14#
 #define MASTER_GAIN                         #15#
 
+
 ; instrument which listens for score data
 ;
 ; NB. I tried making seperate instruments which listened for seperate 
@@ -213,6 +181,7 @@ iparametervalue init p6
                 turnoff
 endin
 
+
 instr +SetFXSendParameter
 iftablenumber   init p4 + ($FX_SEND_FTABLE_OFFSET) - 1  ; 1 - $MAX_NUMBER_OF_FX_SEND
 iparameter      init p5
@@ -220,6 +189,7 @@ iparametervalue init p6
                 tabw_i iparametervalue, iparameter, iftablenumber
                 turnoff
 endin
+
 
 instr +SetMasterParameter
 iftablenumber   init $MASTER_FTABLE_OFFSET 
@@ -251,6 +221,7 @@ iftablenumber   init p4
                 turnoff
 endin
 
+
 instr +CreatePart
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_PART 
@@ -263,6 +234,7 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         turnoff
 endin
 
+
 instr +CreateAllParts
 ipart       init 1
 next_part:
@@ -270,9 +242,7 @@ next_part:
 ipart       += 1
             if(ipart <= $MAX_NUMBER_OF_PARTS) igoto next_part
             turnoff
-        
 endin
-
 
 
 instr +InitializeFXSend
@@ -314,6 +284,7 @@ iftablenumber   init p4
                 turnoff
 endin
 
+
 instr +CreateFXSend
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_FX_SEND
@@ -326,6 +297,7 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         event_i "i", "InitializeFXSend", 0, -1, icreatedftablenumber
                         turnoff
 endin
+
 
 instr +CreateAllFXSends
 ifxsend         init $FX_SEND_FTABLE_OFFSET
@@ -361,6 +333,7 @@ iftablenumber   init p4
                 turnoff
 endin
 
+
 instr +CreateMaster
 irequestedftablenumber  init $MASTER_FTABLE_OFFSET
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_MASTER
@@ -377,7 +350,6 @@ endin
 
 ; load samples into the system
 instr +LoadPartFromSample
-                
 ipartnumber     init p4     ; [ 1 - $MAX_NUMBER_OF_PARTS ]
 Sfilename       init p5
                 ; check that this part exists
@@ -410,8 +382,6 @@ inchnls         filenchnls Sfilename
                 turnoff
 endin
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 opcode PlayTable, a, ikikkk
 iftn, kpitch, ioffset, kloopstart, kloopend, kreverse   xin
@@ -524,6 +494,7 @@ doneplayback:
                 xout asig
 endop
 
+
 ; ADSR envelope which operates with k-rate arguments
 ; the existing envelop opcodes have only i-time arguments which won't suffice for realtime tweaking)
 ; hence we must create our own
@@ -578,6 +549,7 @@ kreleasestagestarted    init 0
                     ;
                     xout kampenvelope
 endop
+
 
 ; playback of a sample (ftable) with an existing part's state (which is also an ftable)
 instr +PlayPart
@@ -1152,6 +1124,7 @@ Sfilename       sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Sm
                 turnoff
     endif
 endin
+
 
 ; this instrument exists so we can turn off a held RecordIntoPart using
 ; the score (which is how communication occurs with this application
