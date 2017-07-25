@@ -19,19 +19,19 @@ nchnls = 2
 ; A note regarding ftables
 ;
 ;
-; Samples, Parts, FXSends, and the Master are internally all represented as ftables.
+; Samples, Parts, FXSends, and the Master are internally *all* represented as ftables.
 ; Yep.
 ; Samples are represented as ftable pairs (ie left/right or duplicate mono channels).
-; Parts, FXSends, and the Master all have state which needed to be realtime editable.
-; Thus, they are also represented each with an ftable.
-; An enduser needn't concern himself with this (as the instrument "API" hides these details), nonetheless
+; Parts, FXSends, and the Master all have state which needs to be realtime editable.
+; Thus, they are also represented each with an ftable to hold their parameter's state.
+; An end-user needn't concern himself with this (as the instrument "API" hides these details), nonetheless
 ; ftables are indexed thusly:
 ;
 ; ftable #s:
 ; [1-128]   : Parts
 ; [129-130] : FXSends
 ; [131]     : Master
-; [131-N]   : Sample Ftables [mono pairs]
+; [132-N]   : Sample Ftables [mono pairs or stereo left/right]
 ;
 ; assuming:
 ;     MAX_NUMBER_OF_PARTS   == 128
@@ -53,7 +53,6 @@ giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ftable offset indices
-#define PART_FTABLE_OFFSET                  #1#
 #define FX_SEND_FTABLE_OFFSET               #$MAX_NUMBER_OF_PARTS + 1#
 #define MASTER_FTABLE_OFFSET                #$MAX_NUMBER_OF_PARTS + $MAX_NUMBER_OF_FX_SEND + 1#
 #define SAMPLE_FTABLE_OFFSET                #$MASTER_FTABLE_OFFSET + 1#
