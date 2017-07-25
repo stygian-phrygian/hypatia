@@ -53,6 +53,7 @@ giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ftable offset indices
+#define PART_FTABLE_OFFSET                  #1#
 #define FX_SEND_FTABLE_OFFSET               #$MAX_NUMBER_OF_PARTS + 1#
 #define MASTER_FTABLE_OFFSET                #$MAX_NUMBER_OF_PARTS + $MAX_NUMBER_OF_FX_SEND + 1#
 #define SAMPLE_FTABLE_OFFSET                #$MASTER_FTABLE_OFFSET + 1#
@@ -235,7 +236,7 @@ endin
 
 
 instr +CreateAllParts
-ipart       init 1
+ipart       init $PART_FTABLE_OFFSET
 next_part:
             event_i "i", "CreatePart", 0, -1, ipart
 ipart       += 1
