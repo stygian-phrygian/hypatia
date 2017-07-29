@@ -1,7 +1,7 @@
 <CsoundSynthesizer>
 <CsOptions>
 ; Select audio/midi flags here according to platform
-; example:
+; example flags:
 ; -odac          ; realtime output
 ; -+rtaudio=alsa ; using a different audio lib
 ; -i adc:hw:2,0  ; realtime input with specifics (my zoom h2n usb microphone)
@@ -68,9 +68,10 @@ gamastersigl                                init 0
 gamastersigr                                init 0
 
 ; part state
+; macros which:
+;     declare the size of the part ftable
+;     index into an ftable (which represents a part's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_PART       #32#
-; part parameter indices (we need indices because parts are just ftables... csound is low level bro, we doin' objects son)
-; part parameters
 #define PART_SAMPLE                         #0# ; <--- this holds the ftable index of the sample's mono (or left stereo) channel
 #define PART_PITCH                          #1#
 #define PART_AMP                            #2#
@@ -84,7 +85,7 @@ gamastersigr                                init 0
 #define PART_TIMESTRETCH_WINDOW_SIZE        #10#
 #define PART_REVERSE                        #11# ; 0: no reverse, !=0: reverse
 #define PART_SEND_DESTINATION               #12# ; 0:  master, >0: fx send
-; part parameters - modulation 
+; part parameters - modulation
 #define PART_AMP_ATTACK                     #13#
 #define PART_AMP_DECAY                      #14#
 #define PART_AMP_SUSTAIN_LEVEL              #15#
@@ -95,6 +96,9 @@ gamastersigr                                init 0
 #define PART_ENV1_DESTINATION               #21# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ; fx send state
+; macros which:
+;     declare the size of the fxsend ftable
+;     index into an ftable (which represents a fxsend's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND    #32#
 ;
 #define FX_SEND_EQ_GAIN_LOW                 #0#
@@ -130,6 +134,9 @@ gamastersigr                                init 0
 #define FX_SEND_GAIN                        #26#
 
 ; master state
+; macros which:
+;     declare the size of the master ftable
+;     index into an ftable (which represents a master's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_MASTER     #16#
 ;
 #define MASTER_EQ_GAIN_LOW                  #0#
@@ -149,13 +156,10 @@ gamastersigr                                init 0
 #define MASTER_COMPRESSOR_GAIN              #14#
 #define MASTER_GAIN                         #15#
 
-
-; instrument which listens for score data
-;
-; NB. I tried making seperate instruments which listened for seperate 
-; "things" (ie. LoadPartFromSample, RecordIntoPart, PlayPart, etc) but 
-; this created extremely weird timing issues.  Therefore, there's now only
-; one OSC input port which listens for csound score data.
+; instrument which listens (via OSC) for csound score data
+; input  - ()
+; output - ()
+; always on - yes
 instr +OSCScoreListener
 Sscore          strcpy ""
 nextscore:
@@ -168,20 +172,28 @@ kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <---
                     kgoto nextscore
 donescore:
 endin
-;
-; Warning: the following "Setter" instruments
-; do *no* bounds checking for invalid ftable numbers
-;
 
+; instruments which are essentially setters for the parts, fxsends, and master states
+;     NB. the following "Setter" instruments do *no* bounds checking for invalid ftable indices
+;
+; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
+;          parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_PART]
+;          parameter value  : Float
+; output - ()
+;
 instr +SetPartParameter
-ipartnumber     init p4 ; 1 - $MAX_NUMBER_OF_PARTS
+ipartnumber     init p4
 ipartparameter  init p5
 iparametervalue init p6
                 tabw_i iparametervalue, ipartparameter, ipartnumber
                 turnoff
 endin
-
-
+;
+; input  - fxsend number    : Integer [1, MAX_NUMBER_OF_FX_SEND]
+;          parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_FX_SEND]
+;          parameter value  : Float
+; output - ()
+;
 instr +SetFXSendParameter
 iftablenumber   init p4 + ($FX_SEND_FTABLE_OFFSET) - 1  ; 1 - $MAX_NUMBER_OF_FX_SEND
 iparameter      init p5
@@ -189,8 +201,11 @@ iparametervalue init p6
                 tabw_i iparametervalue, iparameter, iftablenumber
                 turnoff
 endin
-
-
+;
+; input  - parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_MASTER]
+;          parameter value  : Float
+; output - ()
+;
 instr +SetMasterParameter
 iftablenumber   init $MASTER_FTABLE_OFFSET 
 iparameter      init p4
@@ -199,7 +214,11 @@ iparametervalue init p5
                 turnoff
 endin
 
-
+; instrument that initializes a part with default values (much like calling "new" in an OO language)
+;
+; input  - part ftable number : Integer [PART_FTABLE_OFFSET - (PART_FTABLE_OFFSET + MAX_NUMBER_OF_PARTS)]
+; output - ()
+;
 instr +InitializePart
 iftablenumber   init p4
                 tabw_i $SAMPLE_FTABLE_OFFSET      , $PART_SAMPLE                  , iftablenumber
@@ -221,7 +240,11 @@ iftablenumber   init p4
                 turnoff
 endin
 
-
+; instrument that allocates memory for an ftable which represents part parameter state
+;
+; input  - part ftable number : Integer [PART_FTABLE_OFFSET - (PART_FTABLE_OFFSET + MAX_NUMBER_OF_PARTS)]
+; output - ()
+;
 instr +CreatePart
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_PART 
@@ -234,7 +257,11 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         turnoff
 endin
 
-
+; instrument that allocates $MAX_NUMBER_OF_PARTS ftables
+;
+; input  - ()
+; output - ()
+;
 instr +CreateAllParts
 ipart       init $PART_FTABLE_OFFSET
 next_part:
@@ -244,7 +271,11 @@ ipart       += 1
             turnoff
 endin
 
-
+; instrument that initializes an fxsend with default values
+;
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
+; output - ()
+;
 instr +InitializeFXSend
 iftablenumber   init p4
                 tabw_i 1, $FX_SEND_EQ_GAIN_LOW , iftablenumber  
@@ -284,7 +315,11 @@ iftablenumber   init p4
                 turnoff
 endin
 
-
+; instrument that allocates memory for an ftable which represents fxsend parameter state
+;
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
+; output - ()
+;
 instr +CreateFXSend
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_FX_SEND
@@ -298,7 +333,11 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         turnoff
 endin
 
-
+; instrument that allocates $MAX_NUMBER_OF_FX_SEND ftables
+;
+; input  - ()
+; output - ()
+;
 instr +CreateAllFXSends
 ifxsend         init $FX_SEND_FTABLE_OFFSET
 next_fxsend:
@@ -308,7 +347,11 @@ ifxsend         += 1
                 turnoff
 endin
 
-
+; instrument that initializes the master with default values
+;
+; input  - master ftable number : Integer [MASTER_FTABLE_OFFSET]
+; output - ()
+;
 instr +InitializeMaster
 iftablenumber   init p4
                 tabw_i 1, $MASTER_EQ_GAIN_LOW , iftablenumber
@@ -333,7 +376,11 @@ iftablenumber   init p4
                 turnoff
 endin
 
-
+; instrument that allocates memory for an ftable which represents master parameter state
+;
+; input  - master ftable number : Integer [MASTER_FTABLE_OFFSET]
+; output - ()
+;
 instr +CreateMaster
 irequestedftablenumber  init $MASTER_FTABLE_OFFSET
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_MASTER
@@ -347,10 +394,13 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         turnoff
 endin
 
-
-; load samples into the system
+; instrument which loads samples into the system
+;
+; input  - part ftable number : Integer [1 - MAX_NUMBER_OF_PARTS]
+;        - file name          : String (only wav files as of now)
+; output - ()
 instr +LoadPartFromSample
-ipartnumber     init p4     ; [ 1 - $MAX_NUMBER_OF_PARTS ]
+ipartnumber     init p4
 Sfilename       init p5
                 ; check that this part exists
                 if (ipartnumber < 1 || ipartnumber > $MAX_NUMBER_OF_PARTS) then
@@ -382,7 +432,17 @@ inchnls         filenchnls Sfilename
                 turnoff
 endin
 
-
+; opcode which plays a 1-channel (mono) ftable with realtime editable parameters
+;     NB. this was written because none of the standard opcodes fulfilled all of the requirements I wanted for playback
+;
+; input  - ftable number : Integer (must be a valid ftable (with intentions of playing a sample ftable))
+;        - pitch         : Float [0, inf]
+;        - ftable offset : Float [0, 1]
+;        - loop start    : Float [0, 1]
+;        - loop end      : Float [0, 1]
+;        - reverse flag  : Float {0 => forward playback, not 0 => reverse playback}
+; output - audio         : Float
+;
 opcode PlayTable, a, ikikkk
 iftn, kpitch, ioffset, kloopstart, kloopend, kreverse   xin
                 setksmps 1
@@ -494,10 +554,15 @@ doneplayback:
                 xout asig
 endop
 
-
-; ADSR envelope which operates with k-rate arguments
-; the existing envelop opcodes have only i-time arguments which won't suffice for realtime tweaking)
-; hence we must create our own
+; opcode which is an ADSR envelope with realtime editable parameters
+;     NB. this was written because there wasn't a standard library opcode ADSR envelope that operates with k-rate arguments
+;
+; input  - attack time   : Float [0, inf]
+;        - decay time    : Float [0, inf]
+;        - sustain level : Float [0, inf]
+;        - release time  : Float [0, inf]
+; output - envelope      : Float [0, sustain level]
+;
 opcode kmadsr, k, kkkk
 kampattack, kampdecay, kampsustainlevel, kamprelease    xin
 kcurrenttimeinseconds   timeinsts
@@ -550,8 +615,11 @@ kreleasestagestarted    init 0
                     xout kampenvelope
 endop
 
-
-; playback of a sample (ftable) with an existing part's state (which is also an ftable)
+; instrument which plays a sample (ftable) with an existing part's state (which is also an ftable)
+;
+; input  - part number : Integer [1, MAX_NUMBER_OF_PARTS]
+; output - ()
+;
 instr +PlayPart
                     ; reinitialization label, for use if we change part parameters
                     ; which are represented as i-values
@@ -605,7 +673,7 @@ kenv1destination    tab $PART_ENV1_DESTINATION          , ipartnumber
                     if ( ksampleoffset != isampleoffset ) then
                         reinit reinitialize_instrument
                     endif
-
+                    ;
                     ; if user changed timestretch factor/windowsize in realtime, reinit this instrument
                     if ( ktimestretchfactor != itimestretchfactor || ktimestretchwindowsize != itimestretchwindowsize ) then
                         reinit reinitialize_instrument
@@ -679,18 +747,18 @@ asigr               PlayTable irightchannel, kplaybackspeed, isampleoffset, kloo
             ; I don't know why but that's what the docs say.
             ; I want *my* "Q" argument to range between [0 - 1] so I've chosen a lower bound of 0.7071
             ; and a high bound of what I perceived to be a high "Q."
-
+            ;
             #define FILTER_LEVEL #1#    ; these are *only* used for the shelving filter mode 
             #define FILTER_SLOPE #1#    ; which we aren't using here
-
+            ;
             #define FILTER_MODE_LP #0#
             #define FILTER_MODE_HP #2#
             #define FILTER_MODE_BP #4#
-
+            ;
             #define MAX_FILTER_CUTOFF_HZ #sr * 0.475#   ; sr * 0.49   ~ 21-22khz
             #define MIN_FILTER_CUTOFF_HZ #sr * 0.0009#  ; sr * 0.0009 ~ 40hz
-
-            ; determine whether to apply filter
+            ;
+            ; determine whether to apply filter or not
             if (kfiltertype != 0) then
                 ; determine whether to apply filter envelope to the filter cutoff  
                 if (kenv1destination >= 1 && kenv1depth != 1) then
@@ -766,9 +834,12 @@ asigr           *= kampenvelope
             endif
 endin
 
-
-; an optional effects chain that (multiple) PlayPart can route into
+; instrument which acts as an optional effects chain that (multiple) PlayPart can route into
 instr +FXSend
+;
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET, (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
+; output - ()
+;
 iftablenumber       init p4
                     ; conjure the correct zak channels to read a-rate data from PlayPart
                     ; based off of the ftable we are provided
@@ -783,11 +854,11 @@ iftablenumber       init p4
 ifxsendftableoffset init $FX_SEND_FTABLE_OFFSET 
 ileftzakchannel     init int(2 * (iftablenumber - ifxsendftableoffset))
 irightzakchannel    init i(ileftzakchannel) + 1
-
+                    ;
                     ; read in audio input
 asigl               zar ileftzakchannel
 asigr               zar irightzakchannel
-
+                                ;
                                 ; read the ftable associated with this FXSend
                                 ;
                                 
@@ -900,7 +971,6 @@ asigr           = (kdelaydry * asigr) + (kdelaywet * asigdelayr)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
 ;
-;
                 if(kreverbwet <= 0) kgoto donereverb
 ;
 ;               duplicate signals for denorm opcode (denorm improves efficiency)
@@ -961,8 +1031,11 @@ gamastersigr    += asigr
 
 endin
 
-
-; ------------------------------------------
+; instrument which the Parts and FXSends route audio into (has additional effects itself)
+;
+; input  - ()
+; output - ()
+;
 instr +Master
                                 ; find which ftable master is
 iftablenumber                   init $MASTER_FTABLE_OFFSET
@@ -983,8 +1056,7 @@ kmastercompressorattack         tab $MASTER_COMPRESSOR_ATTACK, iftablenumber
 kmastercompressorrelease        tab $MASTER_COMPRESSOR_RELEASE, iftablenumber
 kmastercompressorgain           tab $MASTER_COMPRESSOR_GAIN, iftablenumber
 kmastergain                     tab $MASTER_GAIN, iftablenumber
-
-
+;
 ; apply (master) effects now
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1057,7 +1129,6 @@ gamastersigr        *= kmastergain
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;                   clip everything
 gamastersigl        clip gamastersigl, 2, 1.0
 gamastersigr        clip gamastersigr, 2, 1.0
@@ -1072,22 +1143,23 @@ gamastersigr        clip gamastersigr, 2, 1.0
 
 endin
 
-; ------------------------------------------
-; record audio from sources (Master's output or audio input)
-; critical to workflow (tweak - resample - repeat)
+; instrument which records audio from either the Master output or audio input
+;     NB. This instrument must come at the end of all the audio processing
+;         *BUT* before the audio data is cleared for the next a-rate loop
+;         CSound's DSP precedence... Yep.
 ;
-; NB. This instrument must come at the end of all the audio processing
-; *BUT* before the audio data is cleared for the next a-rate loop
-; CSound's DSP precedence... Yep.
+; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
+;        - recording source : Float {0 => record from master, not 0 => record from system audio input}
+; output - ()
 instr +RecordIntoPart
-
-#define MODE_RECORD_MASTER  #0#
-
+                ;
+                #define MODE_RECORD_MASTER  #0#
+                ;
 ipartnumber     init p4
 imode           init p5 ; 0 - mastertrack, != 0 - audio_in
-
+                ;
 kreleased       release
-
+                ;
                 ; generate a different filename each time instrument is called
                 ; perhaps name should be conjoined from existing vocabulary?
                 ;     ex: projectname + rand(dictonary) + rand(dictionary) -> proj1_monkey_helicopter.wav
@@ -1106,29 +1178,31 @@ Sfilename       sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Sm
                 ;
                 ; debug
                 prints "Recording into part#: %d\n\n\n", ipartnumber
-    ;
-    if (imode == $MODE_RECORD_MASTER ) then
-                fout Sfilename, 14, gamastersigl, gamastersigr
-    else
-        asigl, asigr    ins
-                ; should we be playing audio_in through a track simultaneously ?
-                ; outs asigl, asigr
-                fout Sfilename, 14, asigl, asigr
-    endif
-    ; when we're done recording
-    ; load the new sample into the provided part
-    if (kreleased == 1) then
-            Sfstatement sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
-                scoreline Sfstatement, 1
-                printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
-                turnoff
-    endif
+                ;
+                if (imode == $MODE_RECORD_MASTER ) then
+                            fout Sfilename, 14, gamastersigl, gamastersigr
+                else
+                    asigl, asigr    ins
+                            ; should we be playing audio_in through a track simultaneously ?
+                            ; outs asigl, asigr
+                            fout Sfilename, 14, asigl, asigr
+                endif
+                ; when we're done recording
+                ; load the new sample into the provided part
+                if (kreleased == 1) then
+                        Sfstatement sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
+                            scoreline Sfstatement, 1
+                            printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
+                            turnoff
+                endif
 endin
 
-
-; this instrument exists so we can turn off a held RecordIntoPart using
-; the score (which is how communication occurs with this application
-; via sending score data over OSC)
+; instrument which exists solely so we can turn off a held RecordIntoPart using
+; the score (which is how communication occurs with this application via score data over OSC)
+;
+; input  - ()
+; output - ()
+;
 instr +StopRecording
     ; turn off all instances of RecordIntoPart
     ; and allow it to release
@@ -1137,10 +1211,13 @@ instr +StopRecording
     turnoff
 endin
 
-
-; this instrument's code *could* have gone in Master
-; but then we couldn't record the master audio channels with RecordIntoPart
-; due to Csound's instrument DSP precedence
+; instrument which exists to clear the accumulated master audio and zak channels
+;     NB. this code *could* have gone in Master
+;         but then we couldn't record the master audio channels with RecordIntoPart due to Csound's instrument DSP precedence
+;
+; input  - ()
+; output - ()
+;
 instr +ClearAudioChannels
                           ; clear master channels for the next a-rate loop iteration to accumulate into
 gamastersigl              = 0.0
@@ -1153,8 +1230,12 @@ inumberofzakaudiochannels = $NUMBER_OF_ZAK_AUDIO_CHANNELS   ; NB (macro expansio
 endin
 
 
-; the following instrument turns on necessary performance instruments
-; as well as performs any other necessary initialization 
+; instrument which turns on everything, ie. necessary performance instruments 
+;     as well as any other necessary initialization 
+;
+; input  - ()
+; output - ()
+;
 instr BootUp
                 ; create audio system's state
                 ; ie. ftables for Parts, FXSends, and the Master
@@ -1191,7 +1272,6 @@ kinc            += 0.001 ; <--- technically, this limits us to 1000 FXSends... b
                 turnoff
 endin
 turnon nstrnum("BootUp")
-
 
 </CsInstruments>
 <CsScore>
