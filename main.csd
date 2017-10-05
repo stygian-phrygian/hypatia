@@ -44,7 +44,7 @@ nchnls = 2
 ;
 ; osc network
 #define OSC_LISTEN_URL                      #"/score"#
-#define OSC_LISTEN_PORT_NUMBER              #5000#
+#define OSC_LISTEN_PORT_NUMBER              #8080#
 giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; define the maximum size of the system
@@ -71,29 +71,29 @@ gamastersigr                                init 0
 ; macros which:
 ;     declare the size of the part ftable
 ;     index into an ftable (which represents a part's current parameter state)
-#define NUMBER_OF_PARAMETERS_PER_PART       #32#
-#define PART_SAMPLE                         #0# ; <--- this holds the ftable index of the sample's mono (or left stereo) channel
-#define PART_PITCH                          #1#
-#define PART_AMP                            #2#
-#define PART_SAMPLE_OFFSET                  #3# ; 0: start, 1: end
-#define PART_FILTER_CUTOFF                  #4#
-#define PART_FILTER_RESONANCE               #5#
-#define PART_FILTER_TYPE                    #6# ; 0: none, 1: lp, 2: hp, 3: bp
-#define PART_PAN                            #7#
-#define PART_DISTORTION_AMOUNT              #8#
-#define PART_TIMESTRETCH_FACTOR             #9#
-#define PART_TIMESTRETCH_WINDOW_SIZE        #10#
-#define PART_REVERSE                        #11# ; 0: no reverse, !=0: reverse
-#define PART_SEND_DESTINATION               #12# ; 0:  master, >0: fx send
-; part parameters - modulation
-#define PART_AMP_ATTACK                     #13#
-#define PART_AMP_DECAY                      #14#
-#define PART_AMP_SUSTAIN_LEVEL              #15#
-#define PART_AMP_RELEASE                    #16#
-#define PART_ENV1_ATTACK                    #18#
-#define PART_ENV1_DECAY                     #19#
-#define PART_ENV1_DEPTH                     #20#
-#define PART_ENV1_DESTINATION               #21# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define NUMBER_OF_PARAMETERS_PER_PART #32#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; N where N >= 0
+#define PART_SAMPLE                   #0#  ; <--- this holds the (true) ftable index of the sample's mono (or left stereo) channel
+#define PART_PITCH                    #1#  ; N (should probably be [0-4] though) default 1
+#define PART_AMP                      #2#  ; N default 1
+#define PART_SAMPLE_OFFSET            #3#  ; [0-1] 0: start, 1: end, default: 0
+#define PART_FILTER_CUTOFF            #4#  ; [0-1]
+#define PART_FILTER_RESONANCE         #5#  ; [0-1]
+#define PART_FILTER_TYPE              #6#  ; 0: none, 1: lp, 2: hp, 3: bp
+#define PART_PAN                      #7#  ; [0-1] default 0.5 is center
+#define PART_DISTORTION_AMOUNT        #8#  ; [0-1] default 0
+#define PART_TIMESTRETCH_FACTOR       #9#  ; N (should be 0-4 though) default 1
+#define PART_TIMESTRETCH_WINDOW_SIZE  #10# ; N (should be very small though)
+#define PART_REVERSE                  #11# ; 0: no reverse, !=0: reverse
+#define PART_SEND_DESTINATION         #12# ; 0: master, >1: fxsend#1, >2 fxsend#2, etc...
+#define PART_AMP_ATTACK               #13# ; N
+#define PART_AMP_DECAY                #14# ; N
+#define PART_AMP_SUSTAIN_LEVEL        #15# ; N
+#define PART_AMP_RELEASE              #16# ; N
+#define PART_ENV1_ATTACK              #18# ; N
+#define PART_ENV1_DECAY               #19# ; N
+#define PART_ENV1_DEPTH               #20# ; M where M <= -1 || M >= 1
+#define PART_ENV1_DESTINATION         #21# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ; fx send state
 ; macros which:
@@ -637,7 +637,7 @@ isamplenumber       tab_i $PART_SAMPLE , ipartnumber
                     prints "[PlayPart] playing ftables: %d & %d on part # %d\n", isamplenumber, isamplenumber+1, ipartnumber
                     ;
                     ; -- realtime editable parameters --
-kpitch              tab $PART_PITCH             , ipartnumber
+kpitch              tab $PART_PITCH                     , ipartnumber
 kamp                tab $PART_AMP                       , ipartnumber
 kfiltercutoff       tab $PART_FILTER_CUTOFF             , ipartnumber 
 kfilterresonance    tab $PART_FILTER_RESONANCE          , ipartnumber 
@@ -1143,41 +1143,48 @@ gamastersigr        clip gamastersigr, 2, 1.0
 
 endin
 
+;;;
+;;; Should there be a thru instrument to let audio-input in?
+;;;
+
 ; instrument which records audio from either the Master output or audio input
 ;     NB. This instrument must come at the end of all the audio processing
 ;         *BUT* before the audio data is cleared for the next a-rate loop
 ;         CSound's DSP precedence... Yep.
 ;
-; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
-;        - recording source : Float {0 => record from master, not 0 => record from system audio input}
+; input  - recording source : Float {0 => record from master, not 0 => record from system audio input}
+;        - part number      : Integer {1-MAX_NUMBER_OF_PARTS => assign to part, 0 => don't assign to a part}
+;        - filename         : String  {* => save recording to said string, "" => auto-generate a file name}
 ; output - ()
 instr +RecordIntoPart
                 ;
                 #define MODE_RECORD_MASTER  #0#
                 ;
-ipartnumber     init p4
-imode           init p5 ; 0 - mastertrack, != 0 - audio_in
+imode           init p4 ; 0 - mastertrack, != 0 - audio_in
+ipartnumber     init p5 ; 0 - don't save to a part, 1-MAX_NUMBER_OF_PARTS - save in part
+Sfilename       init p6 ; * - name of the recording, "" - generate a name
                 ;
 kreleased       release
                 ;
-                ; generate a different filename each time instrument is called
-                ; perhaps name should be conjoined from existing vocabulary?
-                ;     ex: projectname + rand(dictonary) + rand(dictionary) -> proj1_monkey_helicopter.wav
-                ;     it's easier to remember and read than a date... idk
-                ;     it's also funny
-itim            date
-Stim            dates     itim
-Syear           strsub    Stim, 20, 24
-Smonth          strsub    Stim, 4, 7
-Sday            strsub    Stim, 8, 10
-iday            strtod    Sday
-Shor            strsub    Stim, 11, 13
-Smin            strsub    Stim, 14, 16
-Ssec            strsub    Stim, 17, 19
-Sfilename       sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
+                ; generate a filename if Sfilename is ""
+                if (strcmp(Sfilename, "") == 0) then
+                    itim            date
+                    Stim            dates     itim
+                    Syear           strsub    Stim, 20, 24
+                    Smonth          strsub    Stim, 4, 7
+                    Sday            strsub    Stim, 8, 10
+                    iday            strtod    Sday
+                    Shor            strsub    Stim, 11, 13
+                    Smin            strsub    Stim, 14, 16
+                    Ssec            strsub    Stim, 17, 19
+                    Sfilename       sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Smin, Ssec
+                endif
                 ;
                 ; debug
-                prints "Recording into part#: %d\n\n\n", ipartnumber
+                prints "[Recording]:\n\tpart#: %d\n", ipartnumber
+                prints "\t"
+                prints  Sfilename
+                prints "\n\n"
                 ;
                 if (imode == $MODE_RECORD_MASTER ) then
                             fout Sfilename, 14, gamastersigl, gamastersigr
@@ -1189,20 +1196,23 @@ Sfilename       sprintf  "%s_%s_%02d_%s_%s_%s.wav", Syear, Smonth, iday, Shor,Sm
                 endif
                 ; when we're done recording
                 ; load the new sample into the provided part
+                ; only when the part number != 0
                 if (kreleased == 1) then
+                    if (ipartnumber != 0) then
                         Sfstatement sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
                             scoreline Sfstatement, 1
                             printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
                             turnoff
+                    endif
                 endif
 endin
 
 ; instrument which exists solely so we can turn off a held RecordIntoPart using
 ; the score (which is how communication occurs with this application via score data over OSC)
 ;
+;
 ; input  - ()
 ; output - ()
-;
 instr +StopRecording
     ; turn off all instances of RecordIntoPart
     ; and allow it to release
