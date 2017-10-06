@@ -4,10 +4,11 @@
 ; example flags:
 ; -odac          ; realtime output
 ; -+rtaudio=alsa ; using a different audio lib
-; -i adc:hw:2,0  ; realtime input with specifics (my zoom h2n usb microphone)
 ;
 -odac
--iadc
+;-iadc
+-iadc:hw:3,0     ; hw:3,0 == my zoom h2n
+;-Lstdin         ; read events from stdin
 
 </CsOptions>
 <CsInstruments>
@@ -834,6 +835,44 @@ asigr           *= kampenvelope
             endif
 endin
 
+; instrument which monitors input audio either on the master channel
+; or through an FXSend (which eventually goes to master)
+; if you want to switch the output destination just reinit this instrument
+; for indefinite monitoring turn it on with a negative duration
+; to turn it off use the StopMonitoring instrument
+; WARNING: there's nothing preventing multiple instances of this instrument
+; being instantiated.  "StopMonitoring" will turn *all* of them off.
+;
+; input  -  audio output destination : Integer {0 => master, N>0 => FXSend N }
+; output - ()
+instr +MonitorInput
+ioutputdestination  init p4 ; 0 - Master, N - FXSend N
+                    ; get input audio
+asigl, asigr        ins
+                    ; send to master
+                    if (ioutputdestination == 0) then
+                        gamastersigl += asigl
+                        gamastersigr += asigr
+                    ; or send to FXSend
+                    else
+                        ileftzakchannel     = int((ioutputdestination - 1 ) * 2)
+                        irightzakchannel    = ileftzakchannel + 1
+                        zawm asigl, ileftzakchannel
+                        zawm asigr, irightzakchannel
+                    endif
+endin
+
+; instrument which turns off all audio input monitoring
+;
+; input  - ()
+; output - ()
+instr +StopMonitoring
+    ; turn off all instances of and allow it to release
+    turnoff2 nstrnum("MonitorInput"), 0, 1
+    ; turn off this instrument itself
+    turnoff
+endin
+
 ; instrument which acts as an optional effects chain that (multiple) PlayPart can route into
 instr +FXSend
 ;
@@ -1143,10 +1182,6 @@ gamastersigr        clip gamastersigr, 2, 1.0
 
 endin
 
-;;;
-;;; Should there be a thru instrument to let audio-input in?
-;;;
-
 ; instrument which records audio from either the Master output or audio input
 ;     NB. This instrument must come at the end of all the audio processing
 ;         *BUT* before the audio data is cleared for the next a-rate loop
@@ -1288,4 +1323,3 @@ turnon nstrnum("BootUp")
 ;
 </CsScore>
 </CsoundSynthesizer>
-
