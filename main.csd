@@ -6,8 +6,8 @@
 ; -+rtaudio=alsa ; using a different audio lib
 ;
 -odac
-;-iadc
--iadc:hw:3,0     ; hw:3,0 == my zoom h2n
+-iadc
+;-iadc:hw:3,0     ; hw:3,0 == my zoom h2n
 ;-Lstdin         ; read events from stdin
 
 </CsOptions>
@@ -102,44 +102,45 @@ gamastersigr                                init 0
 ;     index into an ftable (which represents a fxsend's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND    #32#
 ;
-#define FX_SEND_EQ_GAIN_LOW                 #0#
-#define FX_SEND_EQ_GAIN_MID                 #1#
-#define FX_SEND_EQ_GAIN_HIGH                #2#
-#define FX_SEND_EQ_LOW_CORNER_FREQUENCY     #3#
-#define FX_SEND_EQ_MID_PEAKING_FREQUENCY    #4#
-#define FX_SEND_EQ_HIGH_CORNER_FREQUENCY    #5#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; X where X is any real number
+#define FX_SEND_EQ_GAIN_LOW                 #0# ; X [0-1]
+#define FX_SEND_EQ_GAIN_MID                 #1# ; X ""
+#define FX_SEND_EQ_GAIN_HIGH                #2# ; X ""
+#define FX_SEND_EQ_LOW_CORNER_FREQUENCY     #3# ; X [0-20000]
+#define FX_SEND_EQ_MID_PEAKING_FREQUENCY    #4# ; X ""
+#define FX_SEND_EQ_HIGH_CORNER_FREQUENCY    #5# ; X ""
 ;
-#define FX_SEND_CHORUS_DELAY_TIME           #6#
-#define FX_SEND_CHORUS_DEPTH                #7#
-#define FX_SEND_CHORUS_RATE                 #8#
-#define FX_SEND_CHORUS_FEEDBACK             #9#
-#define FX_SEND_CHORUS_WET                  #10#
+#define FX_SEND_CHORUS_DELAY_TIME           #6# ; X
+#define FX_SEND_CHORUS_DEPTH                #7# ; X [0-N]
+#define FX_SEND_CHORUS_RATE                 #8# ; X ""
+#define FX_SEND_CHORUS_FEEDBACK             #9# ; X [0-N<1]
+#define FX_SEND_CHORUS_WET                  #10# ; X [0-1]
 ;
-#define FX_SEND_DELAY_LEFT_TIME             #11#
-#define FX_SEND_DELAY_LEFT_FEEDBACK         #12#
-#define FX_SEND_DELAY_RIGHT_TIME            #13#
-#define FX_SEND_DELAY_RIGHT_FEEDBACK        #14#
-#define FX_SEND_DELAY_WET                   #15#
-#define FX_SEND_RING_MOD_FREQUENCY          #16#
+#define FX_SEND_DELAY_LEFT_TIME             #11# ; X
+#define FX_SEND_DELAY_LEFT_FEEDBACK         #12# ; X [0-1]
+#define FX_SEND_DELAY_RIGHT_TIME            #13# ; X
+#define FX_SEND_DELAY_RIGHT_FEEDBACK        #14# ; X [0-1]
+#define FX_SEND_DELAY_WET                   #15# ; X [0-1]
+#define FX_SEND_RING_MOD_FREQUENCY          #16# ; X
 ;
-#define FX_SEND_REVERB_ROOM_SIZE            #17#
-#define FX_SEND_REVERB_DAMPING              #18#
-#define FX_SEND_REVERB_WET                  #19#
-#define FX_SEND_BIT_REDUCTION               #20#
+#define FX_SEND_REVERB_ROOM_SIZE            #17# ; X [0-1]
+#define FX_SEND_REVERB_DAMPING              #18# ; X [0-1]
+#define FX_SEND_REVERB_WET                  #19# ; X [0-1]
+#define FX_SEND_BIT_REDUCTION               #20# ; X [0-16]
 ;
-#define FX_SEND_COMPRESSOR_RATIO            #21#
-#define FX_SEND_COMPRESSOR_THRESHOLD        #22#
-#define FX_SEND_COMPRESSOR_ATTACK           #23#
-#define FX_SEND_COMPRESSOR_RELEASE          #24#
-#define FX_SEND_COMPRESSOR_GAIN             #25#
-#define FX_SEND_GAIN                        #26#
+#define FX_SEND_COMPRESSOR_RATIO            #21# ; X [1-N]
+#define FX_SEND_COMPRESSOR_THRESHOLD        #22# ; X [-N - 0]
+#define FX_SEND_COMPRESSOR_ATTACK           #23# ; X 
+#define FX_SEND_COMPRESSOR_RELEASE          #24# ; X
+#define FX_SEND_COMPRESSOR_GAIN             #25# ; X
+#define FX_SEND_GAIN                        #26# ; X
 
 ; master state
 ; macros which:
 ;     declare the size of the master ftable
 ;     index into an ftable (which represents a master's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_MASTER     #16#
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Same domain as FXSend parameters
 #define MASTER_EQ_GAIN_LOW                  #0#
 #define MASTER_EQ_GAIN_MID                  #1#
 #define MASTER_EQ_GAIN_HIGH                 #2#
@@ -161,7 +162,7 @@ gamastersigr                                init 0
 ; input  - ()
 ; output - ()
 ; always on - yes
-instr +OSCScoreListener
+instr OSCScoreListener
 Sscore          strcpy ""
 nextscore:
 kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <--- the url argument *must* be a string literal
@@ -182,7 +183,7 @@ endin
 ;          parameter value  : Float
 ; output - ()
 ;
-instr +SetPartParameter
+instr SetPartParameter
 ipartnumber     init p4
 ipartparameter  init p5
 iparametervalue init p6
@@ -195,7 +196,7 @@ endin
 ;          parameter value  : Float
 ; output - ()
 ;
-instr +SetFXSendParameter
+instr SetFXSendParameter
 iftablenumber   init p4 + ($FX_SEND_FTABLE_OFFSET) - 1  ; 1 - $MAX_NUMBER_OF_FX_SEND
 iparameter      init p5
 iparametervalue init p6
@@ -207,7 +208,7 @@ endin
 ;          parameter value  : Float
 ; output - ()
 ;
-instr +SetMasterParameter
+instr SetMasterParameter
 iftablenumber   init $MASTER_FTABLE_OFFSET 
 iparameter      init p4
 iparametervalue init p5
@@ -220,7 +221,7 @@ endin
 ; input  - part ftable number : Integer [PART_FTABLE_OFFSET - (PART_FTABLE_OFFSET + MAX_NUMBER_OF_PARTS)]
 ; output - ()
 ;
-instr +InitializePart
+instr InitializePart
 iftablenumber   init p4
                 tabw_i $SAMPLE_FTABLE_OFFSET      , $PART_SAMPLE                  , iftablenumber
                 tabw_i 1                          , $PART_PITCH                   , iftablenumber
@@ -246,7 +247,7 @@ endin
 ; input  - part ftable number : Integer [PART_FTABLE_OFFSET - (PART_FTABLE_OFFSET + MAX_NUMBER_OF_PARTS)]
 ; output - ()
 ;
-instr +CreatePart
+instr CreatePart
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_PART 
 itime                   init 0
@@ -263,7 +264,7 @@ endin
 ; input  - ()
 ; output - ()
 ;
-instr +CreateAllParts
+instr CreateAllParts
 ipart       init $PART_FTABLE_OFFSET
 next_part:
             event_i "i", "CreatePart", 0, -1, ipart
@@ -277,7 +278,7 @@ endin
 ; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
 ; output - ()
 ;
-instr +InitializeFXSend
+instr InitializeFXSend
 iftablenumber   init p4
                 tabw_i 1, $FX_SEND_EQ_GAIN_LOW , iftablenumber  
                 tabw_i 1, $FX_SEND_EQ_GAIN_MID , iftablenumber  
@@ -321,7 +322,7 @@ endin
 ; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
 ; output - ()
 ;
-instr +CreateFXSend
+instr CreateFXSend
 irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_FX_SEND
 itime                   init 0
@@ -339,7 +340,7 @@ endin
 ; input  - ()
 ; output - ()
 ;
-instr +CreateAllFXSends
+instr CreateAllFXSends
 ifxsend         init $FX_SEND_FTABLE_OFFSET
 next_fxsend:
                 event_i "i", "CreateFXSend", 0, -1, ifxsend
@@ -353,7 +354,7 @@ endin
 ; input  - master ftable number : Integer [MASTER_FTABLE_OFFSET]
 ; output - ()
 ;
-instr +InitializeMaster
+instr InitializeMaster
 iftablenumber   init p4
                 tabw_i 1, $MASTER_EQ_GAIN_LOW , iftablenumber
                 tabw_i 1, $MASTER_EQ_GAIN_MID , iftablenumber
@@ -382,7 +383,7 @@ endin
 ; input  - master ftable number : Integer [MASTER_FTABLE_OFFSET]
 ; output - ()
 ;
-instr +CreateMaster
+instr CreateMaster
 irequestedftablenumber  init $MASTER_FTABLE_OFFSET
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_MASTER
 itime                   init 0
@@ -400,7 +401,7 @@ endin
 ; input  - part ftable number : Integer [1 - MAX_NUMBER_OF_PARTS]
 ;        - file name          : String (only wav files as of now)
 ; output - ()
-instr +LoadPartFromSample
+instr LoadPartFromSample
 ipartnumber     init p4
 Sfilename       init p5
                 ; check that this part exists
@@ -621,7 +622,7 @@ endop
 ; input  - part number : Integer [1, MAX_NUMBER_OF_PARTS]
 ; output - ()
 ;
-instr +PlayPart
+instr PlayPart
                     ; reinitialization label, for use if we change part parameters
                     ; which are represented as i-values
                     ; (due to the constraints of certain opcodes within this instrument)
@@ -845,7 +846,7 @@ endin
 ;
 ; input  -  audio output destination : Integer {0 => master, N>0 => FXSend N }
 ; output - ()
-instr +MonitorInput
+instr MonitorInput
 ioutputdestination  init p4 ; 0 - Master, N - FXSend N
                     ; get input audio
 asigl, asigr        ins
@@ -866,7 +867,7 @@ endin
 ;
 ; input  - ()
 ; output - ()
-instr +StopMonitoring
+instr StopMonitoring
     ; turn off all instances of and allow it to release
     turnoff2 nstrnum("MonitorInput"), 0, 1
     ; turn off this instrument itself
@@ -874,7 +875,7 @@ instr +StopMonitoring
 endin
 
 ; instrument which acts as an optional effects chain that (multiple) PlayPart can route into
-instr +FXSend
+instr FXSend
 ;
 ; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET, (FX_SEND_FTABLE_OFFSET + MAX_NUMBER_OF_FX_SEND)]
 ; output - ()
@@ -1075,7 +1076,7 @@ endin
 ; input  - ()
 ; output - ()
 ;
-instr +Master
+instr Master
                                 ; find which ftable master is
 iftablenumber                   init $MASTER_FTABLE_OFFSET
                                 ; read master state
@@ -1187,16 +1188,16 @@ endin
 ;         *BUT* before the audio data is cleared for the next a-rate loop
 ;         CSound's DSP precedence... Yep.
 ;
-; input  - recording source : Float {0 => record from master, not 0 => record from system audio input}
-;        - part number      : Integer {1-MAX_NUMBER_OF_PARTS => assign to part, 0 => don't assign to a part}
+; input  - part number      : Integer {0-MAX_NUMBER_OF_PARTS => assign to part, 0 => don't assign to a part}
+;        - recording source : Float   {0 => record from master, not 0 => record from system audio input}
 ;        - filename         : String  {* => save recording to said string, "" => auto-generate a file name}
 ; output - ()
-instr +RecordIntoPart
+instr RecordIntoPart
                 ;
                 #define MODE_RECORD_MASTER  #0#
                 ;
-imode           init p4 ; 0 - mastertrack, != 0 - audio_in
-ipartnumber     init p5 ; 0 - don't save to a part, 1-MAX_NUMBER_OF_PARTS - save in part
+ipartnumber     init p4 ; 0 - don't save to a part, 1-MAX_NUMBER_OF_PARTS - save in part
+imode           init p5 ; 0 - mastertrack, != 0 - audio_in
 Sfilename       init p6 ; * - name of the recording, "" - generate a name
                 ;
 kreleased       release
@@ -1245,10 +1246,9 @@ endin
 ; instrument which exists solely so we can turn off a held RecordIntoPart using
 ; the score (which is how communication occurs with this application via score data over OSC)
 ;
-;
 ; input  - ()
 ; output - ()
-instr +StopRecording
+instr StopRecording
     ; turn off all instances of RecordIntoPart
     ; and allow it to release
     turnoff2 nstrnum("RecordIntoPart"), 0, 1
@@ -1263,7 +1263,7 @@ endin
 ; input  - ()
 ; output - ()
 ;
-instr +ClearAudioChannels
+instr ClearAudioChannels
                           ; clear master channels for the next a-rate loop iteration to accumulate into
 gamastersigl              = 0.0
 gamastersigr              = 0.0
