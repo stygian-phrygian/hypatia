@@ -836,6 +836,15 @@ asigr           *= kampenvelope
             endif
 endin
 
+; instrument which (oddly enough) turns off all the playing parts
+;
+; input  - ()
+; output - ()
+instr TurnOffAllPlayingParts
+    turnoff2 nstrnum("PlayPart"), 0, 1
+    turnoff
+endin
+
 ; instrument which monitors input audio either on the master channel
 ; or through an FXSend (which eventually goes to master)
 ; if you want to switch the output destination just reinit this instrument
