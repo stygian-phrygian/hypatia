@@ -2,13 +2,13 @@
 <CsOptions>
 ; Select audio/midi flags here according to platform
 ; example flags:
-; -odac          ; realtime output
-; -+rtaudio=alsa ; using a different audio lib
+; -odac           ; realtime output
+; -+rtaudio=alsa  ; using a different audio lib
 ;
 -odac
 -iadc
 ;-iadc:hw:3,0     ; hw:3,0 == my zoom h2n
-;-Lstdin         ; read events from stdin
+;-Lstdin          ; read events from stdin
 
 </CsOptions>
 <CsInstruments>
