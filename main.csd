@@ -618,6 +618,9 @@ kreleasestagestarted    init 0
 endop
 
 ; instrument which plays a sample (ftable) with an existing part's state (which is also an ftable)
+; PlayPart should have a duration specified when called from csound score,
+; else the only way to kill an indefinite PlayPart instrument is by
+; killing all of them.
 ;
 ; input  - part number : Integer [1, MAX_NUMBER_OF_PARTS]
 ; output - ()
