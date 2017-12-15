@@ -50,7 +50,7 @@ giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER
 
 ; define the maximum size of the system
 #define MAX_NUMBER_OF_PARTS                 #128#
-#define MAX_NUMBER_OF_FX_SEND               #2# ; <--- should not exceed 1000
+#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ftable offset indices
