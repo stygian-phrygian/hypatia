@@ -176,48 +176,7 @@ kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <---
 donescore:
 endin
 
-; instruments which are essentially setters for the parts, fxsends, and master states
 ;     NB. the following "Setter" instruments do *no* bounds checking for invalid ftable indices
-;         and you honestly probably shouldn't use it (but rather prefer the other Set___ instruments)
-;
-; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
-;          parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_PART]
-;          parameter value  : Float
-; output - ()
-;
-instr SetPartParameter
-ipartnumber     init p4
-ipartparameter  init p5
-iparametervalue init p6
-                tabw_i iparametervalue, ipartparameter, ipartnumber
-                turnoff
-endin
-;
-; input  - fxsend number    : Integer [1, MAX_NUMBER_OF_FX_SEND]
-;          parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_FX_SEND]
-;          parameter value  : Float
-; output - ()
-;
-instr SetFXSendParameter
-iftablenumber   init p4 + ($FX_SEND_FTABLE_OFFSET) - 1  ; 1 - $MAX_NUMBER_OF_FX_SEND
-iparameter      init p5
-iparametervalue init p6
-                tabw_i iparametervalue, iparameter, iftablenumber
-                turnoff
-endin
-;
-; input  - parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_MASTER]
-;          parameter value  : Float
-; output - ()
-;
-instr SetMasterParameter
-iftablenumber   init $MASTER_FTABLE_OFFSET
-iparameter      init p4
-iparametervalue init p5
-                tabw_i iparametervalue, iparameter, iftablenumber
-                turnoff
-endin
-
 
 ; convenience instruments to set part parameters
 ; which all take the same format of p-value arguments
