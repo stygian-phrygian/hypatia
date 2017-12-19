@@ -229,7 +229,13 @@ endin
 ;
 ;
 instr SetPartSample
-    tabw_i p5, $PART_SAMPLE, p4
+    ; NB. we need to translate argument p5 (the slot number)
+    ; from the conceptual sample "slot" to the actual ftable index it's truly found at.
+    ; This is because of the wonky ftable layout... my b.
+    ;
+    islotnumber      = p5
+    itrueftableindex = $SAMPLE_FTABLE_OFFSET + ((islotnumber - 1) * 2)
+    tabw_i itrueftableindex, $PART_SAMPLE, p4
     turnoff
 endin
 instr SetPartPitch
@@ -506,10 +512,6 @@ instr SetMasterGain
     tabw_i p4, $MASTER_GAIN, $MASTER_FTABLE_OFFSET
     turnoff
 endin
-;;;;;;;;;;;;;;;;
-
-
-
 
 ; instrument that initializes a part with default values (much like calling "new" in an OO language)
 ;
@@ -692,22 +694,28 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
 endin
 
 ; instrument which loads samples into the system
+; NB. the sample slot number is *not* a 1-1 correlation between ftables.
+; Ftables are used for many things and it was necessary to offset where
+; actual sample data gets stored so the number of loaded samples could be indefinite.
+; Morever, the sample data always uses 2 ftables, one for the left and right channels
+; (or duplicated if mono) as the PlayTable opcode only works on mono audio (so we trick
+; it with this hack).  Hacks upon hacks mang.
 ;
-; input  - part ftable number : Integer [1 - MAX_NUMBER_OF_PARTS]
+; input  - sample slot number : Integer [1 - N]
 ;        - file name          : String (only wav files as of now)
 ; output - ()
-instr LoadPartFromSample
-ipartnumber     init p4
+instr LoadSample
+islotnumber     init p4
 Sfilename       init p5
-                ; check that this part exists
-                if (ipartnumber < 1 || ipartnumber > $MAX_NUMBER_OF_PARTS) then
-                    prints "Cannot load sample into nonexistent part #: %d\n", ipartnumber
+                ; check that this slot is valid (NB this'll overwrite whatever might be there already)
+                if (islotnumber < 1) then
+                    prints "Cannot load sample '"
+                    prints  Sfilename
+                    prints  "' into slot#: %d\n", islotnumber
                     turnoff
                 endif
                 ; calculate where we will *actually* store the ftable date of the audio file
-itrueftableindex= $SAMPLE_FTABLE_OFFSET + ((ipartnumber - 1) * 2)
-                ; save a reference to it in the Part
-                tabw_i itrueftableindex, $PART_SAMPLE , ipartnumber
+itrueftableindex= $SAMPLE_FTABLE_OFFSET + ((islotnumber - 1) * 2)
                 ; rename because it's a long name...
 iftn            = itrueftableindex
                 ; determine how many channels are in our sample file
@@ -939,11 +947,11 @@ isamplenumber       tab_i $PART_SAMPLE , ipartnumber
                     ; -- realtime editable parameters --
 kpitch              tab $PART_PITCH                     , ipartnumber
 kamp                tab $PART_AMP                       , ipartnumber
-kfiltercutoff       tab $PART_FILTER_CUTOFF             , ipartnumber 
-kfilterresonance    tab $PART_FILTER_RESONANCE          , ipartnumber 
-kfiltertype         tab $PART_FILTER_TYPE               , ipartnumber 
-kpan                tab $PART_PAN                       , ipartnumber 
-kdistortionamount   tab $PART_DISTORTION_AMOUNT         , ipartnumber 
+kfiltercutoff       tab $PART_FILTER_CUTOFF             , ipartnumber
+kfilterresonance    tab $PART_FILTER_RESONANCE          , ipartnumber
+kfiltertype         tab $PART_FILTER_TYPE               , ipartnumber
+kpan                tab $PART_PAN                       , ipartnumber
+kdistortionamount   tab $PART_DISTORTION_AMOUNT         , ipartnumber
 kreverse            init tab_i($PART_REVERSE, ipartnumber) ; <--- this was a massive bug, apparently we need to init this lest PlayPart & PlayTable wouldn't receive the correct updated value
                                                            ; <--- we might need to do this to the other part parameters too
 kreverse            tab $PART_REVERSE                   , ipartnumber
@@ -1499,15 +1507,15 @@ endin
 ;         *BUT* before the audio data is cleared for the next a-rate loop
 ;         CSound's DSP precedence... Yep.
 ;
-; input  - part number      : Integer {0-MAX_NUMBER_OF_PARTS => assign to part, 0 => don't assign to a part}
+; input  - slot number      : Integer {0 => don't load into a slot, 1 - N => load into slot N}
 ;        - recording source : Float   {0 => record from master, not 0 => record from system audio input}
 ;        - filename         : String  {* => save recording to said string, "" => auto-generate a file name}
 ; output - ()
-instr RecordIntoPart
+instr RecordSample
                 ;
                 #define MODE_RECORD_MASTER  #0#
                 ;
-ipartnumber     init p4 ; 0 - don't save to a part, 1-MAX_NUMBER_OF_PARTS - save in part
+islotnumber     init p4 ; 0 - don't save to a slot, 1-N save in slot
 imode           init p5 ; 0 - mastertrack, != 0 - audio_in
 Sfilename       init p6 ; * - name of the recording, "" - generate a name
                 ;
@@ -1528,10 +1536,10 @@ kreleased       release
                 endif
                 ;
                 ; debug
-                prints "[Recording]:\n\tpart#: %d\n", ipartnumber
+                prints "[Recording]: "
                 prints "\t"
                 prints  Sfilename
-                prints "\n\n"
+                prints "\n"
                 ;
                 if (imode == $MODE_RECORD_MASTER ) then
                             fout Sfilename, 14, gamastersigl, gamastersigr
@@ -1542,14 +1550,14 @@ kreleased       release
                             fout Sfilename, 14, asigl, asigr
                 endif
                 ; when we're done recording
-                ; load the new sample into the provided part
+                ; load the new sample into the provided slot
                 ; only when the part number != 0
                 if (kreleased == 1) then
-                    if (ipartnumber != 0) then
-                        Sfstatement sprintfk {{i "LoadPartFromSample" 0 -1 %d "%s"}}, ipartnumber, Sfilename
-                            scoreline Sfstatement, 1
-                            printks "Done recording into part#: %d\n\n\n", 0, ipartnumber
-                            turnoff
+                    if (islotnumber != 0) then
+                        Sfstatement sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, islotnumber, Sfilename
+                                    scoreline Sfstatement, 1
+                                    printks "Done recording into slot#: %d\n", 0, islotnumber
+                                    turnoff
                     endif
                 endif
 endin
