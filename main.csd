@@ -1590,7 +1590,7 @@ kinc            += 0.001 ; <--- technically, this limits us to 1000 FXSends... b
                 ; make sure audio channels are cleared after each a-rate loop
                 turnon nstrnum("ClearAudioChannels")
                 ; limit the allocations of Recorder to 1
-                maxalloc "RecordIntoPart", 1
+                maxalloc "RecordSample", 1
                 ;
                 turnoff
 endin
