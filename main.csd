@@ -49,7 +49,7 @@ nchnls = 2
 giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; define the maximum size of the system
-#define MAX_NUMBER_OF_PARTS                 #128#
+#define MAX_NUMBER_OF_PARTS                 #16#
 #define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,14 +87,15 @@ gamastersigr                                init 0
 #define PART_TIMESTRETCH_WINDOW_SIZE  #10# ; N (should be very small though)
 #define PART_REVERSE                  #11# ; 0: no reverse, !=0: reverse
 #define PART_SEND_DESTINATION         #12# ; 0: master, >1: fxsend#1, >2 fxsend#2, etc...
-#define PART_AMP_ATTACK               #13# ; N
-#define PART_AMP_DECAY                #14# ; N
-#define PART_AMP_SUSTAIN_LEVEL        #15# ; N
-#define PART_AMP_RELEASE              #16# ; N
-#define PART_ENV1_ATTACK              #18# ; N
-#define PART_ENV1_DECAY               #19# ; N
-#define PART_ENV1_DEPTH               #20# ; M where M <= -1 || M >= 1
-#define PART_ENV1_DESTINATION         #21# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_SEND_WET                 #13# ; [0-1] should *never* be outside this range
+#define PART_AMP_ATTACK               #14# ; N
+#define PART_AMP_DECAY                #15# ; N
+#define PART_AMP_SUSTAIN_LEVEL        #16# ; N
+#define PART_AMP_RELEASE              #17# ; N
+#define PART_ENV1_ATTACK              #19# ; N
+#define PART_ENV1_DECAY               #20# ; N
+#define PART_ENV1_DEPTH               #21# ; M where M <= -1 || M >= 1
+#define PART_ENV1_DESTINATION         #22# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ; fx send state
 ; macros which:
@@ -653,6 +654,7 @@ kreverse            init tab_i($PART_REVERSE, ipartnumber) ; <--- this was a mas
                                                            ; <--- we might need to do this to the other part parameters too
 kreverse            tab $PART_REVERSE                   , ipartnumber
 ksenddestination    tab $PART_SEND_DESTINATION          , ipartnumber
+ksendwet            tab $PART_SEND_WET                  , ipartnumber
                         ; -- realtime editable parameters
                         ; -- but are i-values in the instrument therefore
                         ; -- changing them (in realtime) causes instrument reinitialization
@@ -818,22 +820,25 @@ asigr           *= kampenvelope
             endif
             ;
             ; output on either master or one of the fxsends
-            ; send <  1         ---> master
-            ; send >= 1 & < 2   ---> fxsend 1
-            ; send >= 2 & < 3   ---> fxsend 2
+            ; send destination <  1         ---> master
+            ; send destination >= 1 & < 2   ---> fxsend 1
+            ; send destination >= 2 & < 3   ---> fxsend 2
             ; etc...
+            ; send wet should be between 0 and 1 and mixes the dry and wet audio
             if(ksenddestination >= 1) then
                 ; NB. can't use 'tabw' because its 3rd argument 
                 ; only operates at i-rate (and we need k-rate)
                 ; hence we have to resort to zak channels
                 kleftzakchannel     = int((ksenddestination - 1 ) * 2)
                 krightzakchannel    = kleftzakchannel + 1
-                zawm asigl, kleftzakchannel
-                zawm asigr, krightzakchannel
-                ;asigl_ zar kleftzakchannel
-                ;asigr_ zar krightzakchannel
-                ;outs asigl_, asigr_
+                ; wet signal (mixed)
+                zawm asigl, kleftzakchannel * ksendwet
+                zawm asigr, krightzakchannel * ksendwet
+                ; dry signal (mixed)
+                gamastersigl += asigl * (1 - ksendwet)
+                gamastersigr += asigr * (1 - ksendwet)
             else
+                ; dry signal (unmixed)
                 gamastersigl += asigl
                 gamastersigr += asigr
             endif
