@@ -178,6 +178,7 @@ endin
 
 ; instruments which are essentially setters for the parts, fxsends, and master states
 ;     NB. the following "Setter" instruments do *no* bounds checking for invalid ftable indices
+;         and you honestly probably shouldn't use it (but rather prefer the other Set___ instruments)
 ;
 ; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
 ;          parameter number : Integer [0, NUMBER_OF_PARAMETERS_PER_PART]
@@ -210,12 +211,305 @@ endin
 ; output - ()
 ;
 instr SetMasterParameter
-iftablenumber   init $MASTER_FTABLE_OFFSET 
+iftablenumber   init $MASTER_FTABLE_OFFSET
 iparameter      init p4
 iparametervalue init p5
                 tabw_i iparametervalue, iparameter, iftablenumber
                 turnoff
 endin
+
+
+; convenience instruments to set part parameters
+; which all take the same format of p-value arguments
+;
+;
+; input  - part number      : Integer [1, MAX_NUMBER_OF_PARTS]
+;          parameter value  : Float
+; output - ()
+;
+;
+instr SetPartSample
+    tabw_i p5, $PART_SAMPLE, p4
+    turnoff
+endin
+instr SetPartPitch
+    tabw_i p5, $PART_PITCH, p4
+    turnoff
+endin
+instr SetPartAmp
+    tabw_i p5, $PART_AMP, p4
+    turnoff
+endin
+instr SetPartSampleOffset
+    tabw_i p5, $PART_SAMPLE_OFFSET, p4
+    turnoff
+endin
+instr SetPartFilterCutoff
+    tabw_i p5, $PART_FILTER_CUTOFF, p4
+    turnoff
+endin
+instr SetPartFilterResonance
+    tabw_i p5, $PART_FILTER_RESONANCE, p4
+    turnoff
+endin
+instr SetPartFilterType
+    tabw_i p5, $PART_FILTER_TYPE, p4
+    turnoff
+endin
+instr SetPartDistortion
+    tabw_i p5, $PART_DISTORTION_AMOUNT, p4
+    turnoff
+endin
+instr SetPartPan
+    tabw_i p5, $PART_PAN, p4
+    turnoff
+endin
+instr SetPartTimestretchFactor
+    tabw_i p5, $PART_TIMESTRETCH_FACTOR, p4
+    turnoff
+endin
+instr SetPartTimestretchWindowSize
+    tabw_i p5, $PART_TIMESTRETCH_WINDOW_SIZE, p4
+    turnoff
+endin
+instr SetPartReverse
+    tabw_i p5, $PART_REVERSE, p4
+    turnoff
+endin
+instr SetPartSendDestination
+    tabw_i p5, $PART_SEND_DESTINATION, p4
+    turnoff
+endin
+instr SetPartSendWet
+    tabw_i p5, $PART_SEND_WET, p4
+    turnoff
+endin
+instr SetPartAmpAttack
+    tabw_i p5, $PART_AMP_ATTACK, p4
+    turnoff
+endin
+instr SetPartAmpDecay
+    tabw_i p5, $PART_AMP_DECAY, p4
+    turnoff
+endin
+instr SetPartAmpSustain
+    tabw_i p5, $PART_AMP_SUSTAIN_LEVEL, p4
+    turnoff
+endin
+instr SetPartAmpRelease
+    tabw_i p5, $PART_AMP_RELEASE, p4
+    turnoff
+endin
+instr SetPartEnv1Attack
+    tabw_i p5, $PART_ENV1_ATTACK,p4
+    turnoff
+endin
+instr SetPartEnv1Decay
+    tabw_i p5, $PART_ENV1_DECAY,p4
+    turnoff
+endin
+instr SetPartEnv1Depth
+    tabw_i p5, $PART_ENV1_DEPTH,p4
+    turnoff
+endin
+instr SetPartEnv1Destination
+    tabw_i p5, $PART_ENV1_DESTINATION,p4
+    turnoff
+endin
+
+; convenience instruments to set fxsend parameters
+; which all take the same format of p-value arguments
+;
+;
+; input  - fxsend number    : Integer [1, MAX_NUMBER_OF_PARTS]
+;          parameter value  : Float
+; output - ()
+;
+;
+instr SetFXSendEQGainLow
+    tabw_i p5, $FX_SEND_EQ_GAIN_LOW, p4
+    turnoff
+endin
+instr SetFXSendEQGainMid
+    tabw_i p5, $FX_SEND_EQ_GAIN_MID, p4
+    turnoff
+endin
+instr SetFXSendEQGainHigh
+    tabw_i p5, $FX_SEND_EQ_GAIN_HIGH, p4
+    turnoff
+endin
+instr SetFXSendEQLowCornerFrequency
+    tabw_i p5, $FX_SEND_EQ_LOW_CORNER_FREQUENCY, p4
+    turnoff
+endin
+instr SetFXSendEQMidPeakingFrequency
+    tabw_i p5, $FX_SEND_EQ_MID_PEAKING_FREQUENCY, p4
+    turnoff
+endin
+instr SetFXSendEQHighCornerFrequency
+    tabw_i p5, $FX_SEND_EQ_HIGH_CORNER_FREQUENCY, p4
+    turnoff
+endin
+instr SetFXSendChorusDelayTime
+    tabw_i p5, $FX_SEND_CHORUS_DELAY_TIME, p4
+    turnoff
+endin
+instr SetFXSendChordDepth
+    tabw_i p5, $FX_SEND_CHORUS_DEPTH, p4
+    turnoff
+endin
+instr SetFXSendChorusRate
+    tabw_i p5, $FX_SEND_CHORUS_RATE, p4
+    turnoff
+endin
+instr SetFXSendChorusFeedback
+    tabw_i p5, $FX_SEND_CHORUS_FEEDBACK, p4
+    turnoff
+endin
+instr SetFXSendChorusWet
+    tabw_i p5, $FX_SEND_CHORUS_WET, p4
+    turnoff
+endin
+instr SetFXSendDelayLeftTime
+    tabw_i p5, $FX_SEND_DELAY_LEFT_TIME, p4
+    turnoff
+endin
+instr SetFXSendDelayLeftFeedback
+    tabw_i p5, $FX_SEND_DELAY_LEFT_FEEDBACK, p4
+    turnoff
+endin
+instr SetFXSendDelayRightTime
+    tabw_i p5, $FX_SEND_DELAY_RIGHT_TIME, p4
+    turnoff
+endin
+instr SetFXSendDelayRightFeedback
+    tabw_i p5, $FX_SEND_DELAY_RIGHT_FEEDBACK, p4
+    turnoff
+endin
+instr SetFXSendDelayWet
+    tabw_i p5, $FX_SEND_DELAY_WET, p4
+    turnoff
+endin
+instr SetFXSendRingModFrequency
+    tabw_i p5, $FX_SEND_RING_MOD_FREQUENCY, p4
+    turnoff
+endin
+instr SetFXSendReverbRoomSize
+    tabw_i p5, $FX_SEND_REVERB_ROOM_SIZE, p4
+    turnoff
+endin
+instr SetFXSendReverbDamping
+    tabw_i p5, $FX_SEND_REVERB_DAMPING, p4
+    turnoff
+endin
+instr SetFXSendReverbWet
+    tabw_i p5, $FX_SEND_REVERB_WET, p4
+    turnoff
+endin
+instr SetFXSendBitReduction
+    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4
+    turnoff
+endin
+instr SetFXSendCompressorRatio
+    tabw_i p5, $FX_SEND_COMPRESSOR_RATIO, p4
+    turnoff
+endin
+instr SetFXSendCompressorThreshold
+    tabw_i p5, $FX_SEND_COMPRESSOR_THRESHOLD, p4
+    turnoff
+endin
+instr SetFXSendCompressorAttack
+    tabw_i p5, $FX_SEND_COMPRESSOR_ATTACK, p4
+    turnoff
+endin
+instr SetFXSendCompressorRelease
+    tabw_i p5, $FX_SEND_COMPRESSOR_RELEASE, p4
+    turnoff
+endin
+instr SetFXSendCompressorGain
+    tabw_i p5, $FX_SEND_COMPRESSOR_GAIN, p4
+    turnoff
+endin
+instr SetFXSendGain
+    tabw_i p5, $FX_SEND_GAIN, p4
+    turnoff
+endin
+
+; convenience instruments to set master parameters
+; which all take the same format of p-value arguments
+;
+; input  - parameter value  : Float
+; output - ()
+;
+;
+instr SetMasterEQGainLow
+    tabw_i p4, $MASTER_EQ_GAIN_LOW, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterEQGainMid
+    tabw_i p4, $MASTER_EQ_GAIN_MID, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterEQGainHigh
+    tabw_i p4, $MASTER_EQ_GAIN_HIGH, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterEQLowCornerFrequency
+    tabw_i p4, $MASTER_EQ_LOW_CORNER_FREQUENCY, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterEQMidPeakingFrequency
+    tabw_i p4, $MASTER_EQ_MID_PEAKING_FREQUENCY, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterEQHighCornerFrequency
+    tabw_i p4, $MASTER_EQ_HIGH_CORNER_FREQUENCY, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterReverbRoomSize
+    tabw_i p4, $MASTER_REVERB_ROOM_SIZE, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterReverbDamping
+    tabw_i p4, $MASTER_REVERB_DAMPING, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterReverbWet
+    tabw_i p4, $MASTER_REVERB_WET, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterBitReduction
+    tabw_i p4, $MASTER_BIT_REDUCTION, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterCompressorRatio
+    tabw_i p4, $MASTER_COMPRESSOR_RATIO, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterCompressorThreshold
+    tabw_i p4, $MASTER_COMPRESSOR_THRESHOLD, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterCompressorAttack
+    tabw_i p4, $MASTER_COMPRESSOR_ATTACK, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterCompressorRelease
+    tabw_i p4, $MASTER_COMPRESSOR_RELEASE, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterCompressorGain
+    tabw_i p4, $MASTER_COMPRESSOR_GAIN, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+instr SetMasterGain
+    tabw_i p4, $MASTER_GAIN, $MASTER_FTABLE_OFFSET
+    turnoff
+endin
+;;;;;;;;;;;;;;;;
+
+
+
 
 ; instrument that initializes a part with default values (much like calling "new" in an OO language)
 ;
