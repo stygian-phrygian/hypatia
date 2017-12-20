@@ -36,23 +36,27 @@ Or it's an exploration in masochism and the Jungian Shadow.
 ### Terminology:
 A sample is an audio recording.
 
-A Part represents a sample and an associated group of parameters relevant for sample playback.
-One can think of a Part like a track within a DAW (in a sense), but a track
-with only one sample dedicated to it.  The parameters of the Part (sample amplitude,
-filter, distortion) are all realtime editable.
+A Part holds the playback state of a sample.
+That is, a part is a sample and an associated group of parameters relevant for sample playback.
+One can think of a Part like a track within a DAW (in a sense)
+The parameters of the Part (sample amplitude, filter, distortion, etc.) are all realtime editable.
 
 An FXSend represents a group of parameters relevant for further effects processing
-(after a Part produces audio).
-It's basically an effects buss (common to most analog mixers).
-Multiple Parts can route their audio output simultaneously to one FXSend.
-A Part can only route to one FXSend at a time.
+After a Part produces audio, the audio can be mixed into an FXSend.
+Basically, it's an effects buss (common to most analog mixers).
+Multiple Parts can mix their audio output simultaneously to one FXSend.
+A Part can only mix with one FXSend at a time.
 
 The Master receives the audio output of all the Parts and FXSends.
 
 ###  Application Signal Flow
-Parts -> Master -> speakers
+Parts -> Master
 *or*
-Parts -> FXSend -> Master -> speakers
+Parts -> FXSend -> Master
+*or*
+Audio Input -> Master
+*or*
+Audio Input -> FXSend -> Master
 
 The FXSend effects chain is:
     3-band EQ -> chorus -> delay -> ringmod -> reverb -> bitcrusher -> compressor -> gain
@@ -61,7 +65,7 @@ The Master effects chain is:
     3-band EQ -> reverb -> -> bitcrusher -> compressor -> gain
 
 Recorded audio can come from the hardware audio input *or* from the Master output (ie. resampling).
-Recorded audio can then be loaded into a Part for playback.
+Recorded audio can then be loaded into a sample slot (which should be set to a Part)
 
 Audio input can only come from 1 source currently.
 Audio input can be monitored in real-time though.
@@ -71,14 +75,12 @@ The parameters for the Parts, FXSends, Master can *all* be changed during playba
 Recording can happen during playback too.
 
 ### Current API:
-
-PlayPart
-SetPartParameter
-SetFXSendParameter
-SetMasterParameter
-LoadPartFromSample
-RecordIntoPart
+PlayPart     (NB. this instrument should not be triggered with indefinite duration)
+SetPart...   (ex. SetPartFilterCutoff)
+SetFXSend... (ex. SetFXSendDelayLeftFeedback)
+SetMaster... (ex. SetMasterCompressorAttack)
+LoadSample
+RecordSample
 StopRecording
 MonitorInput
 StopMonitoring
-

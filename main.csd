@@ -29,13 +29,13 @@ nchnls = 2
 ; ftables are indexed thusly:
 ;
 ; ftable #s:
-; [1-128]   : Parts
-; [129-130] : FXSends
-; [131]     : Master
-; [132-N]   : Sample Ftables [mono pairs or stereo left/right]
+; [1-16]   : Parts
+; [17-18]  : FXSends
+; [19]     : Master
+; [20-N]   : Sample Ftables [mono pairs or stereo left/right]
 ;
 ; assuming:
-;     MAX_NUMBER_OF_PARTS   == 128
+;     MAX_NUMBER_OF_PARTS   == 16
 ;     MAX_NUMBER_OF_FX_SEND == 2
 ;
 ;
