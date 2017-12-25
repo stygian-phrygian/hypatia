@@ -888,7 +888,7 @@ endop
 ;        - note number : Integer (presumably -36 to 36)
 ; output - ()
 ;
-instr PlayPart
+instr 1000, PlayPart
                     ; reinitialization label, for use if we change part parameters
                     ; which are represented as i-values
                     ; (due to the constraints of certain opcodes within this instrument)
