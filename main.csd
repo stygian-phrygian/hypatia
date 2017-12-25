@@ -292,111 +292,111 @@ endin
 ;
 ;
 instr SetFXSendEQGainLow
-    tabw_i p5, $FX_SEND_EQ_GAIN_LOW, p4
+    tabw_i p5, $FX_SEND_EQ_GAIN_LOW, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQGainMid
-    tabw_i p5, $FX_SEND_EQ_GAIN_MID, p4
+    tabw_i p5, $FX_SEND_EQ_GAIN_MID, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQGainHigh
-    tabw_i p5, $FX_SEND_EQ_GAIN_HIGH, p4
+    tabw_i p5, $FX_SEND_EQ_GAIN_HIGH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQLowCornerFrequency
-    tabw_i p5, $FX_SEND_EQ_LOW_CORNER_FREQUENCY, p4
+    tabw_i p5, $FX_SEND_EQ_LOW_CORNER_FREQUENCY, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQMidPeakingFrequency
-    tabw_i p5, $FX_SEND_EQ_MID_PEAKING_FREQUENCY, p4
+    tabw_i p5, $FX_SEND_EQ_MID_PEAKING_FREQUENCY, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQHighCornerFrequency
-    tabw_i p5, $FX_SEND_EQ_HIGH_CORNER_FREQUENCY, p4
+    tabw_i p5, $FX_SEND_EQ_HIGH_CORNER_FREQUENCY, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendChorusDelayTime
-    tabw_i p5, $FX_SEND_CHORUS_DELAY_TIME, p4
+    tabw_i p5, $FX_SEND_CHORUS_DELAY_TIME, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendChordDepth
-    tabw_i p5, $FX_SEND_CHORUS_DEPTH, p4
+    tabw_i p5, $FX_SEND_CHORUS_DEPTH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendChorusRate
-    tabw_i p5, $FX_SEND_CHORUS_RATE, p4
+    tabw_i p5, $FX_SEND_CHORUS_RATE, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendChorusFeedback
-    tabw_i p5, $FX_SEND_CHORUS_FEEDBACK, p4
+    tabw_i p5, $FX_SEND_CHORUS_FEEDBACK, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendChorusWet
-    tabw_i p5, $FX_SEND_CHORUS_WET, p4
+    tabw_i p5, $FX_SEND_CHORUS_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDelayLeftTime
-    tabw_i p5, $FX_SEND_DELAY_LEFT_TIME, p4
+    tabw_i p5, $FX_SEND_DELAY_LEFT_TIME, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDelayLeftFeedback
-    tabw_i p5, $FX_SEND_DELAY_LEFT_FEEDBACK, p4
+    tabw_i p5, $FX_SEND_DELAY_LEFT_FEEDBACK, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDelayRightTime
-    tabw_i p5, $FX_SEND_DELAY_RIGHT_TIME, p4
+    tabw_i p5, $FX_SEND_DELAY_RIGHT_TIME, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDelayRightFeedback
-    tabw_i p5, $FX_SEND_DELAY_RIGHT_FEEDBACK, p4
+    tabw_i p5, $FX_SEND_DELAY_RIGHT_FEEDBACK, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDelayWet
-    tabw_i p5, $FX_SEND_DELAY_WET, p4
+    tabw_i p5, $FX_SEND_DELAY_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendRingModFrequency
-    tabw_i p5, $FX_SEND_RING_MOD_FREQUENCY, p4
+    tabw_i p5, $FX_SEND_RING_MOD_FREQUENCY, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendReverbRoomSize
-    tabw_i p5, $FX_SEND_REVERB_ROOM_SIZE, p4
+    tabw_i p5, $FX_SEND_REVERB_ROOM_SIZE, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendReverbDamping
-    tabw_i p5, $FX_SEND_REVERB_DAMPING, p4
+    tabw_i p5, $FX_SEND_REVERB_DAMPING, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendReverbWet
-    tabw_i p5, $FX_SEND_REVERB_WET, p4
+    tabw_i p5, $FX_SEND_REVERB_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendBitReduction
-    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4
+    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorRatio
-    tabw_i p5, $FX_SEND_COMPRESSOR_RATIO, p4
+    tabw_i p5, $FX_SEND_COMPRESSOR_RATIO, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorThreshold
-    tabw_i p5, $FX_SEND_COMPRESSOR_THRESHOLD, p4
+    tabw_i p5, $FX_SEND_COMPRESSOR_THRESHOLD, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorAttack
-    tabw_i p5, $FX_SEND_COMPRESSOR_ATTACK, p4
+    tabw_i p5, $FX_SEND_COMPRESSOR_ATTACK, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorRelease
-    tabw_i p5, $FX_SEND_COMPRESSOR_RELEASE, p4
+    tabw_i p5, $FX_SEND_COMPRESSOR_RELEASE, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorGain
-    tabw_i p5, $FX_SEND_COMPRESSOR_GAIN, p4
+    tabw_i p5, $FX_SEND_COMPRESSOR_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendGain
-    tabw_i p5, $FX_SEND_GAIN, p4
+    tabw_i p5, $FX_SEND_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 
