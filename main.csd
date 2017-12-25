@@ -885,6 +885,7 @@ endop
 ; killing all of them.
 ;
 ; input  - part number : Integer [1, MAX_NUMBER_OF_PARTS]
+;        - note number : Integer (presumably -36 to 36)
 ; output - ()
 ;
 instr PlayPart
@@ -895,6 +896,7 @@ instr PlayPart
 reinitialize_instrument:
                     ;
 ipartnumber         init p4
+inotenumber         init p5
                     ; grab snapshot of current part state 
                     ; all the p-values are relative values to whatever the part currently has
                     ; as such, we can edit the part parameters in realtime with realtime reflection of changes (for most but not all)
@@ -978,6 +980,8 @@ kenv1envelope       kmadsr kenv1attack, kenv1decay, 0, 0
 isamplesr           init ftsr(isamplenumber); sample's original sample rate
 isrfactor           init (isamplesr/sr) ; sample rate factor to correct for mismatched csound and sound file sample rates
 kplaybackspeed      = isrfactor * kpitch
+inotenumber2pitch   = pow(2, inotenumber/12)
+kplaybackspeed      *= inotenumber2pitch
                     ;
                     ; determine whether to apply pitch envelope
                     if(kenv1destination == 0 || kenv1destination == 2 && kenv1depth != 1) then
