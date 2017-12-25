@@ -1097,8 +1097,8 @@ asigr           *= kampenvelope
                 kleftzakchannel     = int((ksenddestination - 1 ) * 2)
                 krightzakchannel    = kleftzakchannel + 1
                 ; wet signal (mixed)
-                zawm asigl, kleftzakchannel * ksendwet
-                zawm asigr, krightzakchannel * ksendwet
+                zawm asigl * ksendwet, kleftzakchannel
+                zawm asigr * ksendwet, krightzakchannel
                 ; dry signal (mixed)
                 gamastersigl += asigl * (1 - ksendwet)
                 gamastersigr += asigr * (1 - ksendwet)
