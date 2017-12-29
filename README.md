@@ -16,7 +16,7 @@
 
 ## Quick Start
 run:
-csound main.csd
+`csound main.csd`
 
 By default it:
 * listens for csound score data on port: 8080 and osc address: "/score"
