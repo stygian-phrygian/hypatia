@@ -23,8 +23,8 @@ By default it:
 * creates a maximum of 16 Parts and 2 FXSend instruments
 
 If you wanna change the:
-* the maximum number of Parts created
-* the maximum number of FXSends created
+* maximum number of Parts created
+* maximum number of FXSends created
 * osc port (for receiving osc messages)
 * osc address (for receiving csound score)
 
