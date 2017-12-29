@@ -1516,7 +1516,7 @@ kreleased       release
                 endif
                 ; when we're done recording
                 ; load the new sample into the provided slot
-                ; only when the part number != 0
+                ; only when the slot number != 0
                 if (kreleased == 1) then
                     if (islotnumber != 0) then
                         Sfstatement sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, islotnumber, Sfilename
@@ -1527,22 +1527,22 @@ kreleased       release
                 endif
 endin
 
-; instrument which exists solely so we can turn off a held RecordIntoPart using
+; instrument which exists solely so we can turn off a held RecordSample using
 ; the score (which is how communication occurs with this application via score data over OSC)
 ;
 ; input  - ()
 ; output - ()
 instr StopRecording
-    ; turn off all instances of RecordIntoPart
+    ; turn off all instances
     ; and allow it to release
-    turnoff2 nstrnum("RecordIntoPart"), 0, 1
+    turnoff2 nstrnum("RecordSample"), 0, 1
     ; turn off this instrument itself
     turnoff
 endin
 
 ; instrument which exists to clear the accumulated master audio and zak channels
 ;     NB. this code *could* have gone in Master
-;         but then we couldn't record the master audio channels with RecordIntoPart due to Csound's instrument DSP precedence
+;         but then we couldn't record the master audio channels with due to Csound's instrument DSP precedence
 ;
 ; input  - ()
 ; output - ()
