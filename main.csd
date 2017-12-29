@@ -12,13 +12,24 @@
 
 </CsOptions>
 <CsInstruments>
-sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc (on my system) for whatever reason
-ksmps  = 128
-nchnls = 2
-0dbfs  = 1
 
-; A note regarding ftables
-;
+;Important Variables (you can modify these but they can't change during runtime)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                              ;
+sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc (on my system) for whatever reason
+ksmps  = 128                                                                   ;
+nchnls = 2                                                                     ;
+0dbfs  = 1                                                                     ;
+;                                                                              ;
+; osc network                                                                  ;
+#define OSC_LISTEN_URL                      #"/score"#                         ;
+#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
+; define the maximum size of the system                                        ;
+#define MAX_NUMBER_OF_PARTS                 #16#                               ;
+#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A note regarding ftables, before venturing further.
 ;
 ; Samples, Parts, FXSends, and the Master are internally *all* represented as ftables.
 ; Yep.
@@ -39,19 +50,6 @@ nchnls = 2
 ;     MAX_NUMBER_OF_FX_SEND == 2
 ;
 ;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; very important variables the enduser *can* modify                            ;
-; (that *can't* change during runtime)                                         ;
-;                                                                              ;
-; osc network                                                                  ;
-#define OSC_LISTEN_URL                      #"/score"#                         ;
-#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
-; define the maximum size of the system                                        ;
-#define MAX_NUMBER_OF_PARTS                 #16#                               ;
-#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000  ;
-;                                                                              ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
 
