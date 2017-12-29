@@ -40,18 +40,20 @@ nchnls = 2
 ;
 ;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; very important variables the enduser can modify (that can't change during runtime)
-;
-; osc network
-#define OSC_LISTEN_URL                      #"/score"#
-#define OSC_LISTEN_PORT_NUMBER              #8080#
-giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; very important variables the enduser *can* modify                            ;
+; (that *can't* change during runtime)                                         ;
+;                                                                              ;
+; osc network                                                                  ;
+#define OSC_LISTEN_URL                      #"/score"#                         ;
+#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
+; define the maximum size of the system                                        ;
+#define MAX_NUMBER_OF_PARTS                 #16#                               ;
+#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000  ;
+;                                                                              ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; define the maximum size of the system
-#define MAX_NUMBER_OF_PARTS                 #16#
-#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET                  #1#
