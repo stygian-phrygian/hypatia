@@ -22,11 +22,12 @@ By default it:
 * listens for csound score data on port: 8080 and osc address: "/score"
 * creates a maximum of 16 Parts and 2 FXSend instruments
 
-If you wanna change the
+If you wanna change the:
 * the maximum number of Parts created
 * the maximum number of FXSends created
 * osc port (for receiving osc messages)
 * osc address (for receiving csound score)
+
 Edit the variables marked "Important Variables" in the csound source at the top of the score header.
 Though, I'd recommend you reconsider your life choices.
 You can thank csound for being so user friendly and configurable. ;)
