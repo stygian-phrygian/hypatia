@@ -18,10 +18,18 @@
 run:
 csound main.csd
 
-It listens for csound score data on port: 8080 and url: "/score"
-If you wanna change which port and url it uses I'd recommend you reconsider your life choices.
-If you wanna change which hardware device audio input comes from (see the last part of the above sentence).
-If you wanna change the maximum amount of Parts and FXSends there are... just don't (currently).
+By default it:
+* listens for csound score data on port: 8080 and osc address: "/score"
+* creates a maximum of 16 Parts and 2 FXSend instruments
+
+If you wanna change the
+* the maximum number of Parts created
+* the maximum number of FXSends created
+* osc port (for receiving osc messages)
+* osc address (for receiving csound score)
+Edit the variables marked "Important Variables" in the csound source at the top of the score header.
+Though, I'd recommend you reconsider your life choices.
+You can thank csound for being so user friendly and configurable. ;)
 
 ## Backstory
 How much can one *single* csound file do?
@@ -147,3 +155,6 @@ Recording can happen during playback too.
 - SetMasterCompressorGain
 - SetMasterGain
 
+## Warning
+I'm unsure anyone should use this code without a wrapper of some sort in a higher level language or application (which I'm working on).
+Nonetheless, in the spirit of giving.  Have at it.

@@ -13,7 +13,7 @@
 </CsOptions>
 <CsInstruments>
 
-;Important Variables (you can modify these but they can't change during runtime)
+; Important Variables (you can modify these but they can't change during runtime)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                              ;
 sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc (on my system) for whatever reason
@@ -21,12 +21,13 @@ ksmps  = 128                                                                   ;
 nchnls = 2                                                                     ;
 0dbfs  = 1                                                                     ;
 ;                                                                              ;
-; osc network                                                                  ;
-#define OSC_LISTEN_URL                      #"/score"#                         ;
-#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
-; define the maximum size of the system                                        ;
+; the maximum size of the system                                               ;
 #define MAX_NUMBER_OF_PARTS                 #16#                               ;
 #define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000  ;
+;                                                                              ;
+; the osc network                                                              ;
+#define OSC_LISTEN_ADDRESS                  #"/score"#                         ;
+#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; A note regarding ftables, before venturing further.
@@ -166,10 +167,10 @@ gamastersigr                                init 0
 instr OSCScoreListener
 Sscore          strcpy ""
 nextscore:
-kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_URL, "s", Sscore ; <--- the url argument *must* be a string literal
-                if(kscorereceived == 0) kgoto donescore                   ; I tried a global string variable but that didn't work
-                    printks "[OSC] received score:\n", 0                  ; therefore I've used a macro instead to have some semblance
-                    printks Sscore, 0                                     ; of configurability... *sigh*
+kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_ADDRESS, "s", Sscore ; <--- the url argument *must* be a string literal
+                if(kscorereceived == 0) kgoto donescore                       ; I tried a global string variable but that didn't work
+                    printks "[OSC] received score:\n", 0                      ; therefore I've used a macro instead to have some semblance
+                    printks Sscore, 0                                         ; of configurability... *sigh*
                     printks "\n", 0
                     scoreline Sscore, 1
                     kgoto nextscore
