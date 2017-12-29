@@ -14,26 +14,27 @@
 - It can tweak the effects themselves during playback
 - It uses OSC for controlling all this (MIDI is fun but too limited)
 
-## Quick Start:
+## Quick Start
 run:
 csound main.csd
 
 It listens for csound score data on port: 8080 and url: "/score"
 If you wanna change which port and url it uses I'd recommend you reconsider your life choices.
-If you wanna change which hardware device audio input comes from (see above sentence).
+If you wanna change which hardware device audio input comes from (see the last part of the above sentence).
+If you wanna change the maximum amount of Parts and FXSends there are... just don't (currently).
 
-## Backstory:
+## Backstory
 How much can one *single* csound file do?
 It turns out quite a lot, though it involves high carbohydrate traditional italian cuisine.
 
-## Usage:
+## Usage
 This application is controlled by sending (csound) score data to it (via OSC).
 The score data however is fairly high-level (ish).
 The csound instruments were designed to mimic an API in a sense.
 One can think of this application as an audio backend perhaps for other things.
 Or it's an exploration in masochism.
 
-## Terminology:
+## Terminology
 A sample is an audio recording.
 
 A Part holds the playback state of a sample.
@@ -75,74 +76,74 @@ The parameters for the Parts, FXSends, Master can *all* be changed during playba
 Recording can happen during playback too.
 
 ## Current API:
-PlayPart     (NB. this instrument should not be triggered with indefinite duration)
-LoadSample
-RecordSample
-StopRecording
-MonitorInput
-StopMonitoring
-SetPartSample
-SetPartPitch
-SetPartAmp
-SetPartSampleOffset
-SetPartFilterCutoff
-SetPartFilterResonance
-SetPartFilterType
-SetPartDistortion
-SetPartPan
-SetPartTimestretchFactor
-SetPartTimestretchWindowSize
-SetPartReverse
-SetPartSendDestination
-SetPartSendWet
-SetPartAmpAttack
-SetPartAmpDecay
-SetPartAmpSustain
-SetPartAmpRelease
-SetPartEnv1Attack
-SetPartEnv1Decay
-SetPartEnv1Depth
-SetFXSendEQGainLow
-SetFXSendEQGainMid
-SetFXSendEQGainHigh
-SetFXSendEQLowCornerFrequency
-SetFXSendEQMidPeakingFrequency
-SetFXSendEQHighCornerFrequency
-SetFXSendChorusDelayTime
-SetFXSendChordDepth
-SetFXSendChorusRate
-SetFXSendChorusFeedback
-SetFXSendChorusWet
-SetFXSendDelayLeftTime
-SetFXSendDelayLeftFeedback
-SetFXSendDelayRightTime
-SetFXSendDelayRightFeedback
-SetFXSendDelayWet
-SetFXSendRingModFrequency
-SetFXSendReverbRoomSize
-SetFXSendReverbDamping
-SetFXSendReverbWet
-SetFXSendBitReduction
-SetFXSendCompressorRatio
-SetFXSendCompressorThreshold
-SetFXSendCompressorAttack
-SetFXSendCompressorRelease
-SetFXSendCompressorGain
-SetFXSendGain
-SetMasterEQGainLow
-SetMasterEQGainMid
-SetMasterEQGainHigh
-SetMasterEQLowCornerFrequency
-SetMasterEQMidPeakingFrequency
-SetMasterEQHighCornerFrequency
-SetMasterReverbRoomSize
-SetMasterReverbDamping
-SetMasterReverbWet
-SetMasterBitReduction
-SetMasterCompressorRatio
-SetMasterCompressorThreshold
-SetMasterCompressorAttack
-SetMasterCompressorRelease
-SetMasterCompressorGain
-SetMasterGain
+- PlayPart     (NB. this instrument should not be triggered with indefinite duration)
+- LoadSample
+- RecordSample
+- StopRecording
+- MonitorInput
+- StopMonitoring
+- SetPartSample
+- SetPartPitch
+- SetPartAmp
+- SetPartSampleOffset
+- SetPartFilterCutoff
+- SetPartFilterResonance
+- SetPartFilterType
+- SetPartDistortion
+- SetPartPan
+- SetPartTimestretchFactor
+- SetPartTimestretchWindowSize
+- SetPartReverse
+- SetPartSendDestination
+- SetPartSendWet
+- SetPartAmpAttack
+- SetPartAmpDecay
+- SetPartAmpSustain
+- SetPartAmpRelease
+- SetPartEnv1Attack
+- SetPartEnv1Decay
+- SetPartEnv1Depth
+- SetFXSendEQGainLow
+- SetFXSendEQGainMid
+- SetFXSendEQGainHigh
+- SetFXSendEQLowCornerFrequency
+- SetFXSendEQMidPeakingFrequency
+- SetFXSendEQHighCornerFrequency
+- SetFXSendChorusDelayTime
+- SetFXSendChordDepth
+- SetFXSendChorusRate
+- SetFXSendChorusFeedback
+- SetFXSendChorusWet
+- SetFXSendDelayLeftTime
+- SetFXSendDelayLeftFeedback
+- SetFXSendDelayRightTime
+- SetFXSendDelayRightFeedback
+- SetFXSendDelayWet
+- SetFXSendRingModFrequency
+- SetFXSendReverbRoomSize
+- SetFXSendReverbDamping
+- SetFXSendReverbWet
+- SetFXSendBitReduction
+- SetFXSendCompressorRatio
+- SetFXSendCompressorThreshold
+- SetFXSendCompressorAttack
+- SetFXSendCompressorRelease
+- SetFXSendCompressorGain
+- SetFXSendGain
+- SetMasterEQGainLow
+- SetMasterEQGainMid
+- SetMasterEQGainHigh
+- SetMasterEQLowCornerFrequency
+- SetMasterEQMidPeakingFrequency
+- SetMasterEQHighCornerFrequency
+- SetMasterReverbRoomSize
+- SetMasterReverbDamping
+- SetMasterReverbWet
+- SetMasterBitReduction
+- SetMasterCompressorRatio
+- SetMasterCompressorThreshold
+- SetMasterCompressorAttack
+- SetMasterCompressorRelease
+- SetMasterCompressorGain
+- SetMasterGain
 
