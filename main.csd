@@ -181,9 +181,12 @@ Sscore          strcpy ""
 nextscore:
 kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_ADDRESS, "s", Sscore ; <--- the url argument *must* be a string literal
                 if(kscorereceived == 0) kgoto donescore                       ; I tried a global string variable but that didn't work
-                    printks "[OSC] received score:\n", 0                      ; therefore I've used a macro instead to have some semblance
-                    printks Sscore, 0                                         ; of configurability... *sigh*
+                                                                              ; therefore I've used a macro instead to have some semblance
+                                                                              ; of configurability... *sigh*
+                    printks "[OSC] received score:\n", 0
+                    printks Sscore, 0
                     printks "\n", 0
+                    ;
                     scoreline Sscore, 1
                     kgoto nextscore
 donescore:
@@ -506,8 +509,7 @@ iftablenumber   init p4
                 tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
                 tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
                 ;
-                prints "initialized Part on ftable # %d\n", iftablenumber
-                ;
+                prints "[InitializePart] initialized Part on ftable # %d\n", iftablenumber
                 turnoff
 endin
 
@@ -521,9 +523,8 @@ irequestedftablenumber  init p4
 iftablesize             init $NUMBER_OF_PARAMETERS_PER_PART 
 itime                   init 0
 igenroutine             init 2
-                        prints "requested allocation of a Part on ftable # %d\n", irequestedftablenumber
-icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ; <--- only one 0 is necessary apparently 
-                        prints "allocated a Part on ftable # %d\n", icreatedftablenumber
+icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ; <--- only one 0 is necessary apparently
+                        prints "[CreatePart] allocated Part on ftable # %d\n", icreatedftablenumber
                         event_i "i", "InitializePart", 0, -1, icreatedftablenumber
                         turnoff
 endin
@@ -581,7 +582,7 @@ iftablenumber   init p4
                 tabw_i 1, $FX_SEND_COMPRESSOR_GAIN , iftablenumber
                 tabw_i 1, $FX_SEND_GAIN , iftablenumber
                 ;
-                prints "initialized FXSend on ftable # %d\n", iftablenumber
+                prints "[InitializeFXSend] initialized FXSend on ftable # %d\n", iftablenumber
                 ;
                 turnoff
 endin
@@ -597,9 +598,8 @@ iftablesize             init $NUMBER_OF_PARAMETERS_PER_FX_SEND
 itime                   init 0
 igenroutine             init 2
                         ;
-                        prints "requested allocation of a FXSend on ftable # %d\n", irequestedftablenumber
 icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0 ; <--- only one 0 is necessary apparently 
-                        prints "allocated a FXSend on ftable # %d\n", icreatedftablenumber
+                        prints "[CreateFXSend] allocated FXSend on ftable # %d\n", icreatedftablenumber
                         event_i "i", "InitializeFXSend", 0, -1, icreatedftablenumber
                         turnoff
 endin
@@ -642,7 +642,7 @@ iftablenumber   init p4
                 tabw_i 1, $MASTER_COMPRESSOR_GAIN , iftablenumber
                 tabw_i 1, $MASTER_GAIN , iftablenumber
                 ;
-                prints "initialized Master on ftable # %d\n", iftablenumber
+                prints "[InitializeMaster] initialized Master on ftable # %d\n", iftablenumber
                 ;
                 turnoff
 endin
@@ -658,9 +658,8 @@ iftablesize             init $NUMBER_OF_PARAMETERS_PER_MASTER
 itime                   init 0
 igenroutine             init 2
                         ;
-                        prints "requested allocation of a Master on ftable # %d\n", irequestedftablenumber
 icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenroutine,  0 ; <--- only one 0 is necessary apparently 
-                        prints "allocated a Master on ftable # %d\n", icreatedftablenumber
+                        prints "[CreateMaster] allocated a Master on ftable # %d\n", icreatedftablenumber
                         event_i "i", "InitializeMaster", 0, -1, icreatedftablenumber
                         turnoff
 endin
@@ -681,7 +680,7 @@ islotnumber     init p4
 Sfilename       init p5
                 ; check that this slot is valid (NB this'll overwrite whatever might be there already)
                 if (islotnumber < 1) then
-                    prints "Cannot load sample '"
+                    prints "[LoadSample] cannot load sample '"
                     prints  Sfilename
                     prints  "' into slot#: %d\n", islotnumber
                     turnoff
@@ -695,15 +694,15 @@ inchnls         filenchnls Sfilename
                 ; mono file loads into iftn and iftn+1
                 ; stereo file loads left and right channels into iftn and iftn+1 respectively
                 if (inchnls == 1) then
-                        prints "Loading mono sample into ftable # %d & %d respectively\n", iftn, iftn+1
+                        prints "[LoadSample] loading mono sample into ftable # %d & %d respectively\n", iftn, iftn+1
                     gir ftgen iftn  , 0, 0, 1, Sfilename, 0, 0, 0
                     gir ftgen iftn+1, 0, 0, 1, Sfilename, 0, 0, 0
                 elseif (inchnls == 2) then
-                        prints "Loading stereo sample left and right channels into ftable # %d & %d respectively\n", iftn, iftn+1
+                        prints "[LoadSample] loading stereo sample left and right channels into ftable # %d & %d respectively\n", iftn, iftn+1
                     gir ftgen iftn  , 0, 0, 1, Sfilename, 0, 0, 1   ; <--- left channel
                     gir ftgen iftn+1, 0, 0, 1, Sfilename, 0, 0, 2   ; <--- right channel
                 else
-                        prints "Cannot load sample (unsupported number of channels)\n"
+                        prints "[LoadSample] cannot load sample (unsupported number of channels)\n"
                 endif
                 ;
                 turnoff
@@ -1512,7 +1511,7 @@ kreleased       release
                 endif
                 ;
                 ; debug
-                prints "[Recording]: "
+                prints "[RecordSample] started recording\n"
                 prints "\t"
                 prints  Sfilename
                 prints "\n"
@@ -1532,7 +1531,7 @@ kreleased       release
                     if (islotnumber != 0) then
                         Sfstatement sprintfk {{i "LoadSample" 0 -1 %d "%s"}}, islotnumber, Sfilename
                                     scoreline Sfstatement, 1
-                                    printks "Done recording into slot#: %d\n", 0, islotnumber
+                                    printks "[RecordSample] done recording into slot#: %d\n", 0, islotnumber
                                     turnoff
                     endif
                 endif
