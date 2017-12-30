@@ -1,0 +1,10 @@
+csound main.csd \
+-o dac \
+-i adc \
+-r 44100 \
+--ksmps=128 \
+--omacro:MAX_NUMBER_OF_PARTS=16 \
+--omacro:MAX_NUMBER_OF_FX_SEND=2 \
+--omacro:OSC_LISTEN_PORT_NUMBER=8080 \
+
+

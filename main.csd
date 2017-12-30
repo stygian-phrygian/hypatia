@@ -1,63 +1,75 @@
 <CsoundSynthesizer>
 <CsOptions>
-; Select audio/midi flags here according to platform
-; example flags:
-; -odac           ; realtime output
-; -+rtaudio=alsa  ; using a different audio lib
+;------------------------------------------------------------------------------
+; Runtime configuration for the:
 ;
--odac
--iadc
-;-iadc:hw:3,0     ; hw:3,0 == my zoom h2n
-;-Lstdin          ; read events from stdin
-
+;     input & output devices
+;         options "-i"
+;         option "-o"
+;
+;     reserved symbols:
+;         sr
+;         ksmps
+;
+;     macros:
+;         MAX_NUMBER_OF_PARTS
+;         MAX_NUMBER_OF_FX_SEND
+;         OSC_LISTEN_PORT_NUMBER
+;
+; is all editable in the provided ./hypatia script (wherein these variables
+; are passed as flags to csound). Consulting the csound documentation
+; (particularly regarding flags) is highly recommended before editing anything.
+;
+; http://www.csounds.com/manual/html/CommandFlags.html
+;
+;------------------------------------------------------------------------------
 </CsOptions>
 <CsInstruments>
+; The rest of the necessary reserved symbols and a macro
+; (which shouldn't be configurable by the user) are set here
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+nchnls  =                  2                               ;
+0dbfs   =                  1                               ;
+#define OSC_LISTEN_ADDRESS #"/score"#                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Important Variables (you can modify these but they can't change during runtime)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                                                                              ;
-sr     = 44100 ; 48000 makes csound explode UNDERRUNS with -iadc (on my system) for whatever reason
-ksmps  = 128                                                                   ;
-nchnls = 2                                                                     ;
-0dbfs  = 1                                                                     ;
-;                                                                              ;
-; the maximum size of the system                                               ;
-#define MAX_NUMBER_OF_PARTS                 #16#                               ;
-#define MAX_NUMBER_OF_FX_SEND               #1# ; <--- should not exceed 1000  ;
-;                                                                              ;
-; the osc network                                                              ;
-#define OSC_LISTEN_ADDRESS                  #"/score"#                         ;
-#define OSC_LISTEN_PORT_NUMBER              #8080#                             ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; A note regarding ftables, before venturing further.
+
+
+
+
+;------------------------------------------------------------------------------
 ;
-; Samples, Parts, FXSends, and the Master are internally *all* represented as ftables.
-; Yep.
-; Samples are represented as ftable pairs (ie left/right or duplicate mono channels).
-; Parts, FXSends, and the Master all have state which needs to be realtime editable.
-; Thus, they are also represented each with an ftable to hold their parameter's state.
-; An end-user needn't concern himself with this (as the instrument "API" hides these details), nonetheless
+; A note regarding ftables, before the curious venture any further.
+;
+; Samples, Parts, FXSends, and the Master are internally *all* represented...
+; as ftables. Yep.
+;
+; Samples are represented as ftable pairs (mono pairs or stereo left/right)
+; Parts, FXSends, and the Master all have state which needs to be realtime
+; editable.  Thus, they are represented each with an ftable to hold their
+; parameter's state.  The user needn't concern his or herself with this
+; (as the instrument "API" hides these details) nonetheless...
 ; ftables are indexed thusly:
 ;
-; ftable #s:
-; [1-16]   : Parts
-; [17-18]  : FXSends
-; [19]     : Master
-; [20-N]   : Sample Ftables [mono pairs or stereo left/right]
+; ftable indices (inclusive):
+;     [1-16]   : Parts
+;     [17-18]  : FXSends
+;     [19]     : Master
+;     [20-N]   : Sample Ftables [mono pairs or stereo left/right]
 ;
 ; assuming:
 ;     MAX_NUMBER_OF_PARTS   == 16
-;     MAX_NUMBER_OF_FX_SEND == 2
+;     MAX_NUMBER_OF_FX_SEND == 0
 ;
-;
+;------------------------------------------------------------------------------
 
 giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET                  #1#
-#define FX_SEND_FTABLE_OFFSET               #$MAX_NUMBER_OF_PARTS + 1#
-#define MASTER_FTABLE_OFFSET                #$MAX_NUMBER_OF_PARTS + $MAX_NUMBER_OF_FX_SEND + 1#
+#define FX_SEND_FTABLE_OFFSET               #$MAX_NUMBER_OF_PARTS  + 1#
+#define MASTER_FTABLE_OFFSET                #$MAX_NUMBER_OF_PARTS  + $MAX_NUMBER_OF_FX_SEND + 1#
 #define SAMPLE_FTABLE_OFFSET                #$MASTER_FTABLE_OFFSET + 1#
 
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
