@@ -1,8 +1,8 @@
 # Hypatia
 
 ### What Is This?
-- A sampler
-- Written in csound
+- A sampler engine
+- Written in CSound
 - 1 file
 
 ## What Does It Do?
@@ -14,34 +14,41 @@
 - It can tweak the effects themselves during playback
 - It uses OSC for controlling all this (MIDI is fun but too limited)
 
+## Requirements
+[Install CSound](http://csound.com/download.html)
+
 ## Quick Start
 run:
-`csound main.csd`
+`
+./hypatia
+`
 
 By default it:
-* listens for csound score data on port: 8080 and osc address: "/score"
+* opens the audio input/output devices
+* listens for CSound score data on port: 8080 and OSC address: "/score"
 * creates a maximum of 16 Parts and 2 FXSend instruments
 
 If you wanna change the:
 * maximum number of Parts created
 * maximum number of FXSends created
-* osc port (for receiving osc messages)
-* osc address (for receiving csound score)
+* OSC port (for receiving OSC messages)
+* hardware audio input device
+* hardware audio output device
 
-Edit the variables marked "Important Variables" in the csound source at the top of the score header.
+Edit the file `hypatia` wherein the above mentioned variables are passed as flags to CSound.
 Though, I'd recommend you reconsider your life choices.
-You can thank csound for being so user friendly and configurable. ;)
+You can thank CSound for being so user friendly and configurable. ;)
 
 ## Backstory
 How much can one *single* csound file do?
 It turns out quite a lot, though it involves high carbohydrate traditional italian cuisine.
 
 ## Usage
-This application is controlled by sending (csound) score data to it (via OSC).
-The score data however is fairly high-level (ish).
-The csound instruments were designed to mimic an API in a sense.
+This application is controlled by sending CSound score data to it (via OSC).  See the API below.
+The score data is fairly high-level (ish).  The CSound instruments were designed to mimic an API in a sense.
 One can think of this application as an audio backend perhaps for other things.
 Or it's an exploration in masochism.
+In fact, you should probably only use this within a wrapper language or application (which I'm working on).
 
 ## Terminology
 A sample is an audio recording.
@@ -155,7 +162,3 @@ Recording can happen during playback too.
 - SetMasterCompressorRelease
 - SetMasterCompressorGain
 - SetMasterGain
-
-## Warning
-I'm unsure anyone should use this code without a wrapper of some sort in a higher level language or application (which I'm working on).
-Nonetheless, in the spirit of giving.  Have at it.
