@@ -18,24 +18,24 @@
 [Install CSound](http://csound.com/download.html)
 
 ## Quick Start
-run:
-`
-./hypatia
-`
-
-By default it:
-* opens the audio input/output devices
+run: ` ./hypatia `
+This script:
+* boots CSound with `main.csd` and the necessary runtime constants
+* opens the default audio input/output devices
 * listens for CSound score data on port: 8080 and OSC address: "/score"
 * creates a maximum of 16 Parts and 2 FXSend instruments
 
+## Configuration
 If you wanna change the:
 * maximum number of Parts created
 * maximum number of FXSends created
+* sample rate or k-rate
 * OSC port (for receiving OSC messages)
 * hardware audio input device
 * hardware audio output device
 
-Edit the file `hypatia` wherein the above mentioned variables are passed as flags to CSound.
+Edit the script `hypatia` wherein the above mentioned variables are passed as flags to CSound.
+See [this](http://www.csounds.com/manual/html/CommandFlags.html) for further info on flag configuration.
 Though, I'd recommend you reconsider your life choices.
 You can thank CSound for being so user friendly and configurable. ;)
 
@@ -48,7 +48,7 @@ This application is controlled by sending CSound score data to it (via OSC).  Se
 The score data is fairly high-level (ish).  The CSound instruments were designed to mimic an API in a sense.
 One can think of this application as an audio backend perhaps for other things.
 Or it's an exploration in masochism.
-In fact, you should probably only use this within a wrapper language or application (which I'm working on).
+In fact, you should probably only use this within a wrapper language or application (which I'm working on maybe).
 
 ## Terminology
 A sample is an audio recording.
