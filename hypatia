@@ -1,6 +1,6 @@
 csound main.csd                         \
---output=dac                            \
 --input=adc                             \
+--output=dac                            \
 --sample-rate=44100                     \
 --ksmps=128                             \
 --omacro:MAX_NUMBER_OF_PARTS=16         \
