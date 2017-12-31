@@ -27,8 +27,8 @@ This script:
 
 ## Configuration
 If you wanna change the:
-* maximum number of Parts created
-* maximum number of FXSends created
+* number of Parts created
+* number of FXSends created
 * sample rate or k-rate
 * OSC port (for receiving OSC messages)
 * hardware audio input device
@@ -45,8 +45,9 @@ It turns out quite a lot, though it involves high carbohydrate traditional itali
 
 ## Usage
 This application is controlled by sending CSound score data to it (via OSC).  See the API below.
-The score data is fairly high-level (ish).  The CSound instruments were designed to mimic an API in a sense.
-One can think of this application as an audio backend perhaps for other things.
+The score data is fairly high-level (ish) however not meant to be written by hand.
+The CSound instruments were designed to mimic an API in a sense.
+One can think of this as an audio backend perhaps for other things.
 Or it's an exploration in masochism.
 In fact, you should probably only use this within a wrapper language or application (which I'm working on maybe).
 
