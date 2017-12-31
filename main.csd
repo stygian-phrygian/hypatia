@@ -13,8 +13,8 @@
 ;
 ;     macros:
 ;         NUMBER_OF_PARTS
-;         NUMBER_OF_FX_SEND
-;         OSC_LISTEN_PORT_NUMBER
+;         NUMBER_OF_FX_SENDS
+;         OSC_LISTEN_PORT
 ;
 ; are passed as flags to csound). Consulting the csound documentation
 ; (particularly regarding flags) is highly recommended before editing anything.
@@ -58,21 +58,21 @@ nchnls  =                  2                               ;
 ;     [20-N]   : Sample Ftables [mono pairs or stereo left/right]
 ;
 ; assuming:
-;     NUMBER_OF_PARTS   == 16
-;     NUMBER_OF_FX_SEND == 0
+;     NUMBER_OF_PARTS    == 16
+;     NUMBER_OF_FX_SENDS == 0
 ;
 ;------------------------------------------------------------------------------
 
-giosclistenhandle                           OSCinit $OSC_LISTEN_PORT_NUMBER 
+giosclistenhandle                           OSCinit $OSC_LISTEN_PORT
 
 ; ftable offset indices
 #define PART_FTABLE_OFFSET                  #1#
 #define FX_SEND_FTABLE_OFFSET               #$NUMBER_OF_PARTS  + 1#
-#define MASTER_FTABLE_OFFSET                #$NUMBER_OF_PARTS  + $NUMBER_OF_FX_SEND + 1#
+#define MASTER_FTABLE_OFFSET                #$NUMBER_OF_PARTS  + $NUMBER_OF_FX_SENDS + 1#
 #define SAMPLE_FTABLE_OFFSET                #$MASTER_FTABLE_OFFSET + 1#
 
 ; zak busses (for routing a-rate data out of PlayPart into FXSend)
-#define NUMBER_OF_ZAK_AUDIO_CHANNELS        #2 * $NUMBER_OF_FX_SEND#
+#define NUMBER_OF_ZAK_AUDIO_CHANNELS        #2 * $NUMBER_OF_FX_SENDS#
 #define zak_dummy_variable                  #$NUMBER_OF_ZAK_AUDIO_CHANNELS#
                                             zakinit ($NUMBER_OF_ZAK_AUDIO_CHANNELS) , ($zak_dummy_variable)
 
@@ -544,7 +544,7 @@ endin
 
 ; instrument that initializes an fxsend with default values
 ;
-; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SEND)]
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SENDS)]
 ; output - ()
 ;
 instr InitializeFXSend
@@ -588,7 +588,7 @@ endin
 
 ; instrument that allocates memory for an ftable which represents fxsend parameter state
 ;
-; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SEND)]
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET - (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SENDS)]
 ; output - ()
 ;
 instr CreateFXSend
@@ -603,7 +603,7 @@ icreatedftablenumber    ftgen irequestedftablenumber, itime, iftablesize, igenro
                         turnoff
 endin
 
-; instrument that allocates $NUMBER_OF_FX_SEND ftables
+; instrument that allocates $NUMBER_OF_FX_SENDS ftables
 ;
 ; input  - ()
 ; output - ()
@@ -613,7 +613,7 @@ ifxsend         init $FX_SEND_FTABLE_OFFSET
 next_fxsend:
                 event_i "i", "CreateFXSend", 0, -1, ifxsend
 ifxsend         += 1
-                if(ifxsend < $FX_SEND_FTABLE_OFFSET + $NUMBER_OF_FX_SEND) igoto next_fxsend
+                if(ifxsend < $FX_SEND_FTABLE_OFFSET + $NUMBER_OF_FX_SENDS) igoto next_fxsend
                 turnoff
 endin
 
@@ -1170,7 +1170,7 @@ endin
 ; instrument which acts as an optional effects chain that (multiple) PlayPart can route into
 instr FXSend
 ;
-; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET, (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SEND)]
+; input  - fxsend ftable number : Integer [FX_SEND_FTABLE_OFFSET, (FX_SEND_FTABLE_OFFSET + NUMBER_OF_FX_SENDS)]
 ; output - ()
 ;
 iftablenumber       init p4
@@ -1582,7 +1582,7 @@ instr BootUp
                 turnon nstrnum("CreateMaster")
                 ; turn on our OSC score listener
                 turnon nstrnum("OSCScoreListener")
-                ; turn on $NUMBER_OF_FX_SEND FXSend instruments
+                ; turn on $NUMBER_OF_FX_SENDS FXSend instruments
                 ; and associate them with the proper ftables
                 ;
                 ; NB. 'i' events with a -1 duration occurring more than once (on the same instrument)
@@ -1598,7 +1598,7 @@ next_fxsend:
                 event "i", ifxsendinstrnum+kinc, 0, -1, kfxsendftable ; <--- there be dragons
 kfxsendftable   += 1
 kinc            += 0.001 ; <--- technically, this limits us to 1000 FXSends... but dude.
-                if ( kfxsendftable < $FX_SEND_FTABLE_OFFSET + $NUMBER_OF_FX_SEND ) kgoto next_fxsend
+                if ( kfxsendftable < $FX_SEND_FTABLE_OFFSET + $NUMBER_OF_FX_SENDS ) kgoto next_fxsend
                 ;
                 ; turn on the master
                 turnon nstrnum("Master")

@@ -4,8 +4,8 @@ csound main.csd                         \
 --sample-rate=44100                     \
 --ksmps=128                             \
 --omacro:NUMBER_OF_PARTS=16             \
---omacro:NUMBER_OF_FX_SEND=2            \
---omacro:OSC_LISTEN_PORT_NUMBER=8080    \
+--omacro:NUMBER_OF_FX_SENDS=2           \
+--omacro:OSC_LISTEN_PORT=8080           \
 --messagelevel=0                        \
 
 
