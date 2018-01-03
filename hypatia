@@ -5,6 +5,6 @@ csound main.csd                 \
 --ksmps=128                     \
 --omacro:NUMBER_OF_PARTS=16     \
 --omacro:NUMBER_OF_FX_SENDS=2   \
---omacro:OSC_LISTEN_PORT=0      \
+--omacro:OSC_LISTEN_PORT=8080   \
 
 
