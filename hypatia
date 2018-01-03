@@ -1,11 +1,10 @@
-csound main.csd                         \
---input=adc                             \
---output=dac                            \
---sample-rate=44100                     \
---ksmps=128                             \
---omacro:NUMBER_OF_PARTS=16             \
---omacro:NUMBER_OF_FX_SENDS=2           \
---omacro:OSC_LISTEN_PORT=8080           \
---messagelevel=0                        \
+csound main.csd                 \
+--input=adc                     \
+--output=dac                    \
+--sample-rate=44100             \
+--ksmps=128                     \
+--omacro:NUMBER_OF_PARTS=16     \
+--omacro:NUMBER_OF_FX_SENDS=2   \
+--omacro:OSC_LISTEN_PORT=0      \
 
 

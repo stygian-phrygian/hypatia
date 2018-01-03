@@ -63,8 +63,6 @@ nchnls  =                  2                               ;
 ;
 ;------------------------------------------------------------------------------
 
-giosclistenhandle                           OSCinit $OSC_LISTEN_PORT
-
 ; ftable offset indices
 #define PART_FTABLE_OFFSET                  #1#
 #define FX_SEND_FTABLE_OFFSET               #$NUMBER_OF_PARTS  + 1#
@@ -176,18 +174,19 @@ gamastersigr                                init 0
 ; output - ()
 ; always on - yes
 instr OSCScoreListener
-Sscore          strcpy ""
+iosclistenhandle    OSCinit $OSC_LISTEN_PORT
+Sscore              strcpy ""
 nextscore:
-kscorereceived  OSClisten giosclistenhandle, $OSC_LISTEN_ADDRESS, "s", Sscore ; <--- the url argument *must* be a string literal
-                if(kscorereceived == 0) kgoto donescore                       ; I tried a global string variable but that didn't work
-                                                                              ; therefore I've used a macro instead to have some semblance
-                                                                              ; of configurability... *sigh*
-                    printks "[OSC] received score:\n", 0
-                    printks Sscore, 0
-                    printks "\n", 0
-                    ;
-                    scoreline Sscore, 1
-                    kgoto nextscore
+kscorereceived      OSClisten iosclistenhandle, $OSC_LISTEN_ADDRESS, "s", Sscore  ; <--- the url argument *must* be a string literal
+                    if(kscorereceived == 0) kgoto donescore                       ; I tried a global string variable but that didn't work
+                                                                                  ; therefore I've used a macro instead to have some semblance
+                                                                                  ; of configurability... *sigh*
+                        printks "[OSC] received score:\n", 0
+                        printks Sscore, 0
+                        printks "\n", 0
+                        ;
+                        scoreline Sscore, 1
+                        kgoto nextscore
 donescore:
 endin
 
@@ -1580,8 +1579,10 @@ instr BootUp
                 turnon nstrnum("CreateAllParts")
                 turnon nstrnum("CreateAllFXSends")
                 turnon nstrnum("CreateMaster")
-                ; turn on our OSC score listener
-                turnon nstrnum("OSCScoreListener")
+                ; turn on our OSC score listener (if OSC_LISTEN_PORT > 0)
+                if $OSC_LISTEN_PORT > 0 then
+                    turnon nstrnum("OSCScoreListener")
+                endif
                 ; turn on $NUMBER_OF_FX_SENDS FXSend instruments
                 ; and associate them with the proper ftables
                 ;
