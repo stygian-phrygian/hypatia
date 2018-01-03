@@ -39,6 +39,7 @@ Edit the script `hypatia` wherein the above mentioned variables are passed as fl
 See [this](http://www.csounds.com/manual/html/CommandFlags.html) for further info on flag configuration.
 Though, I'd recommend you reconsider your life choices.
 You can thank CSound for being so user friendly and configurable. ;)
+If you'd like to turn off OSC listening, set `OSC_LISTEN_PORT=0`.
 
 ## Backstory
 How much can one *single* csound file do?
