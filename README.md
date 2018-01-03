@@ -33,6 +33,7 @@ If you wanna change the:
 * OSC port (for receiving OSC messages)
 * hardware audio input device
 * hardware audio output device
+* other CSound specific options
 
 Edit the script `hypatia` wherein the above mentioned variables are passed as flags to CSound.
 See [this](http://www.csounds.com/manual/html/CommandFlags.html) for further info on flag configuration.
@@ -44,12 +45,16 @@ How much can one *single* csound file do?
 It turns out quite a lot, though it involves high carbohydrate traditional italian cuisine.
 
 ## Usage
-This application is controlled by sending CSound score data to it (via OSC).  See the API below.
-The score data is fairly high-level (ish) however not meant to be written by hand.
-The CSound instruments were designed to mimic an API in a sense.
+This application is controlled by sending CSound score data to it (after booting it up with ./hypatia)
+The score data is transmitted through:
+* OSC
+* stdin pipe (if you use a unix-y system and pass -Lstdin as a flag)
+The score data activates CSound instruments which resemble an API of sorts.
+See the API below for further details on what the instruments can do.
+The instruments are fairly high-level (ish) however probably not meant to be written by hand.
+In fact, you should probably only use this within a wrapper language or application (which I'm working on maybe).
 One can think of this as an audio backend perhaps for other things.
 Or it's an exploration in masochism.
-In fact, you should probably only use this within a wrapper language or application (which I'm working on maybe).
 
 ## Terminology
 A sample is an audio recording.
