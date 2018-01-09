@@ -142,7 +142,7 @@ gamastersigr                                init 0
 ;
 #define FX_SEND_COMPRESSOR_RATIO            #21# ; X [1-N]
 #define FX_SEND_COMPRESSOR_THRESHOLD        #22# ; X [-N - 0]
-#define FX_SEND_COMPRESSOR_ATTACK           #23# ; X 
+#define FX_SEND_COMPRESSOR_ATTACK           #23# ; X
 #define FX_SEND_COMPRESSOR_RELEASE          #24# ; X
 #define FX_SEND_COMPRESSOR_GAIN             #25# ; X
 #define FX_SEND_GAIN                        #26# ; X
