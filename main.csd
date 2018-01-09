@@ -93,19 +93,20 @@ gamastersigr                                init 0
 #define PART_FILTER_TYPE              #6#  ; 0: none, 1: lp, 2: hp, 3: bp
 #define PART_PAN                      #7#  ; [0-1] default 0.5 is center
 #define PART_DISTORTION_AMOUNT        #8#  ; [0-1] default 0
-#define PART_TIMESTRETCH_FACTOR       #9#  ; N (should be 0-4 though) default 1
-#define PART_TIMESTRETCH_WINDOW_SIZE  #10# ; N (should be very small though)
-#define PART_REVERSE                  #11# ; 0: no reverse, !=0: reverse
-#define PART_SEND_DESTINATION         #12# ; 0: master, >1: fxsend#1, >2 fxsend#2, etc...
-#define PART_SEND_WET                 #13# ; [0-1] should *never* be outside this range
-#define PART_AMP_ATTACK               #14# ; N
-#define PART_AMP_DECAY                #15# ; N
-#define PART_AMP_SUSTAIN_LEVEL        #16# ; N
-#define PART_AMP_RELEASE              #17# ; N
-#define PART_ENV1_ATTACK              #19# ; N
-#define PART_ENV1_DECAY               #20# ; N
-#define PART_ENV1_DEPTH               #21# ; M where M <= -1 || M >= 1
-#define PART_ENV1_DESTINATION         #22# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_LOOP_START               #9#  ; [0-1]
+#define PART_LOOP_END                 #10# ; [0-1]
+#define PART_LOOP_ON                  #11# ; 0: no looping, !=0: looping
+#define PART_REVERSE                  #12# ; 0: no reverse, !=0: reverse
+#define PART_SEND_DESTINATION         #13# ; 0: master, >1: fxsend#1, >2 fxsend#2, etc...
+#define PART_SEND_WET                 #14# ; [0-1] should *never* be outside this range
+#define PART_AMP_ATTACK               #15# ; N
+#define PART_AMP_DECAY                #16# ; N
+#define PART_AMP_SUSTAIN_LEVEL        #17# ; N
+#define PART_AMP_RELEASE              #18# ; N
+#define PART_ENV1_ATTACK              #20# ; N
+#define PART_ENV1_DECAY               #21# ; N
+#define PART_ENV1_DEPTH               #22# ; M where M <= -1 || M >= 1
+#define PART_ENV1_DESTINATION         #23# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ; fx send state
 ; macros which:
@@ -243,12 +244,16 @@ instr SetPartPan
     tabw_i p5, $PART_PAN, p4
     turnoff
 endin
-instr SetPartTimestretchFactor
-    tabw_i p5, $PART_TIMESTRETCH_FACTOR, p4
+instr SetPartLoopStart
+    tabw_i p5, $PART_LOOP_START, p4
     turnoff
 endin
-instr SetPartTimestretchWindowSize
-    tabw_i p5, $PART_TIMESTRETCH_WINDOW_SIZE, p4
+instr SetPartLoopEnd
+    tabw_i p5, $PART_LOOP_END, p4
+    turnoff
+endin
+instr SetPartLoopOn
+    tabw_i p5, $PART_LOOP_ON, p4
     turnoff
 endin
 instr SetPartReverse
@@ -501,8 +506,9 @@ iftablenumber   init p4
                 tabw_i 0.2                        , $PART_FILTER_RESONANCE        , iftablenumber
                 tabw_i 0                          , $PART_FILTER_TYPE             , iftablenumber
                 tabw_i 0.5                        , $PART_PAN                     , iftablenumber
-                tabw_i 1                          , $PART_TIMESTRETCH_FACTOR      , iftablenumber
-                tabw_i 0.002                      , $PART_TIMESTRETCH_WINDOW_SIZE , iftablenumber
+                tabw_i 0                          , $PART_LOOP_START              , iftablenumber
+                tabw_i 1                          , $PART_LOOP_END                , iftablenumber
+                tabw_i 0                          , $PART_LOOP_ON                 , iftablenumber
                 tabw_i 0                          , $PART_REVERSE                 , iftablenumber
                 tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
                 tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
@@ -707,6 +713,7 @@ inchnls         filenchnls Sfilename
 endin
 
 ; opcode which plays a 1-channel (mono) ftable with realtime editable parameters
+; looping only occurs when kloopend > kloopstart, even if kloopon is != 0
 ;     NB. this was written because none of the standard opcodes fulfilled all of the requirements I wanted for playback
 ;
 ; input  - ftable number : Integer (must be a valid ftable (with intentions of playing a sample ftable))
@@ -717,8 +724,8 @@ endin
 ;        - reverse flag  : Float {0 => forward playback, not 0 => reverse playback}
 ; output - audio         : Float
 ;
-opcode PlayTable, a, ikikkk
-iftn, kpitch, ioffset, kloopstart, kloopend, kreverse   xin
+opcode PlayTable, a, ikikkkk
+iftn, kpitch, ioffset, kloopstart, kloopend, kloopon, kreverse   xin
                 setksmps 1
                 ;
 asig            init 0
@@ -744,19 +751,19 @@ imaxtableindex  init tableng(iftn) - 1
                     endif
                 endif
                 ;
-                ; determine if we are currently looping
+                ; determine if we can currently loop
 kloopsize       = kloopend - kloopstart
                 ;
-                ; if we are looping
-                if (kloopsize > 0) then
+                ; if we are able to loop
+                if (kloopsize > 0 && kloopon != 0) then
                     ; set looping flag "true"
-                    klooping    = 1
+                    klooping        = 1
                     ; calculate loop points
                     kloopstartindex = kloopstart * imaxtableindex
                     kloopendindex   = kloopend * imaxtableindex
                 else
                     ; set looping flag "false"
-                    klooping    = 0
+                    klooping        = 0
                     ; otherwise provide normal boundaries (we won't loop anyway though)
                     kloopstartindex = 0
                     kloopendindex   = imaxtableindex
@@ -928,17 +935,17 @@ kreverse            init tab_i($PART_REVERSE, ipartnumber) ; <--- this was a mas
 kreverse            tab $PART_REVERSE                   , ipartnumber
 ksenddestination    tab $PART_SEND_DESTINATION          , ipartnumber
 ksendwet            tab $PART_SEND_WET                  , ipartnumber
+                    ;
+kloopstart          tab   $PART_LOOP_START              , ipartnumber
+kloopend            tab   $PART_LOOP_END                , ipartnumber
+kloopon             tab   $PART_LOOP_ON                 , ipartnumber
                         ; -- realtime editable parameters
                         ; -- but are i-values in the instrument therefore
                         ; -- changing them (in realtime) causes instrument reinitialization
                         ; -----------------------------------------------
-ksampleoffset           tab $PART_SAMPLE_OFFSET             , ipartnumber
-isampleoffset           init i(ksampleoffset)   
-ktimestretchfactor      tab   $PART_TIMESTRETCH_FACTOR      , ipartnumber
-itimestretchfactor      init i(ktimestretchfactor)
-ktimestretchwindowsize  tab   $PART_TIMESTRETCH_WINDOW_SIZE , ipartnumber
-itimestretchwindowsize  init i(ktimestretchwindowsize)
-                    ; -----------------------------------------------
+ksampleoffset           tab $PART_SAMPLE_OFFSET , ipartnumber
+isampleoffset           init i(ksampleoffset)
+                        ; -----------------------------------------------
                     ; -- realtime editable modulation --
 kampattack          tab $PART_AMP_ATTACK                , ipartnumber
 kampdecay           tab $PART_AMP_DECAY                 , ipartnumber
@@ -951,11 +958,6 @@ kenv1destination    tab $PART_ENV1_DESTINATION          , ipartnumber
                     ;
                     ; if user changed sample offset in realtime, reinit this instrument
                     if ( ksampleoffset != isampleoffset ) then
-                        reinit reinitialize_instrument
-                    endif
-                    ;
-                    ; if user changed timestretch factor/windowsize in realtime, reinit this instrument
-                    if ( ktimestretchfactor != itimestretchfactor || ktimestretchwindowsize != itimestretchwindowsize ) then
                         reinit reinitialize_instrument
                     endif
                     ;
@@ -974,7 +976,7 @@ kenv1envelope       kmadsr kenv1attack, kenv1decay, 0, 0
                     ; the scaled env1   : [ 1 - env1depth ] or [env1depth - -1]
                     ;
                     ; handle positive depth
-                    if(kenv1depth >= 1) then 
+                    if(kenv1depth >= 1) then
                         kenv1envelope   *= (kenv1depth - 1)
                         kenv1envelope   += 1
                     ; handle negative depth
@@ -998,29 +1000,13 @@ kplaybackspeed      *= inotenumber2pitch
                         kplaybackspeed  *= kenv1envelope
                     endif
                     ;
-                    ; initialize loop points (for PlayTable opcode) in case we want to timestretch
-kloopstart          init isampleoffset
-kloopend            init 0
-                    ;
                     ; determine which ftables our PlayTable opcode is reading from
 ileftchannel        init isamplenumber
 irightchannel       init isamplenumber + 1
                     ;
-                    ; check whether timestretch is on (and apply it if so)
-                    if(itimestretchfactor > 0 && itimestretchfactor != 1 && itimestretchwindowsize > 0) then
-                        insampleframes      init nsamp(isamplenumber)   ; sample's length (in sample frames)
-                        ioriginalsampleduration init isrfactor            * (insampleframes / sr) 
-                        itimestretchduration    init itimestretchfactor   *  ioriginalsampleduration
-                        itimestretchduration    init itimestretchduration - (isampleoffset * ioriginalsampleduration)
-                                        ; modulate sample looppoints to simulate (shitty) timestretch effect
-                        kline           line isampleoffset, itimestretchduration, 1
-                        kloopstart      = kline - itimestretchwindowsize ; <--- is this a bug?
-                        kloopend        = kline                          ; must we account
-                    endif                                                ; for windowsize effect on time
-                    ;
-                    ; read table data 
-asigl               PlayTable ileftchannel,  kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
-asigr               PlayTable irightchannel, kplaybackspeed, isampleoffset, kloopstart, kloopend, kreverse
+                    ; read table data
+asigl               PlayTable ileftchannel,  kplaybackspeed, isampleoffset, kloopstart, kloopend, kloopon, kreverse
+asigr               PlayTable irightchannel, kplaybackspeed, isampleoffset, kloopstart, kloopend, kloopon, kreverse
             ;
             ; filter
             ;
