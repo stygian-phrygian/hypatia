@@ -137,7 +137,7 @@ gamastersigr                                init 0
 #define FX_SEND_DELAY_WET                   #15# ; X [0-1]
 #define FX_SEND_RING_MOD_FREQUENCY          #16# ; X
 ;
-#define FX_SEND_BIT_REDUCTION               #17# ; X [0-16]
+#define FX_SEND_BIT_DEPTH                   #17# ; X [0-16]
 ;
 #define FX_SEND_DISTORTION                  #18# ; X [0-1]
 ;
@@ -403,8 +403,8 @@ instr SetFXSendReverbWet
     tabw_i p5, $FX_SEND_REVERB_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
-instr SetFXSendBitReduction
-    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
+instr SetFXSendBitDepth
+    tabw_i p5, $FX_SEND_BIT_DEPTH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendDistortion
@@ -596,7 +596,7 @@ iftablenumber   init p4
                 tabw_i 0, $FX_SEND_DELAY_WET , iftablenumber
                 tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
                 ;
-                tabw_i 16, $FX_SEND_BIT_REDUCTION, iftablenumber
+                tabw_i 16, $FX_SEND_BIT_DEPTH, iftablenumber
                 ;
                 tabw_i 0, $FX_SEND_DISTORTION, iftablenumber
                 ;
@@ -1225,7 +1225,7 @@ kdelayrightfeedback             tab $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
 kdelaywet                       tab $FX_SEND_DELAY_WET, iftablenumber
 kringmodfrequency               tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
                                 ;
-kbitreduction                   tab $FX_SEND_BIT_REDUCTION, iftablenumber
+kbitdepth                       tab $FX_SEND_BIT_DEPTH, iftablenumber
                                 ;
 kdistortion                     tab $FX_SEND_DISTORTION, iftablenumber
                                 ;
@@ -1321,9 +1321,8 @@ asigr           = (kdelaydry * asigr) + (kdelaywet * asigdelayr)
 ; adapted from LoFi.csd found here:
 ; http://iainmccurdy.org/csound.html
 ;
-if (kbitreduction < 16) then
-    k_bitdepth  = kbitreduction
-    k_values    pow 2, k_bitdepth
+if (kbitdepth < 16) then
+    k_values    pow 2, kbitdepth
     asigl       = (int((asigl/0dbfs)*k_values))/k_values
     asigr       = (int((asigr/0dbfs)*k_values))/k_values
 endif
