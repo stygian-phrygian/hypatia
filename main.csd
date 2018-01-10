@@ -92,7 +92,7 @@ gamastersigr                                init 0
 #define PART_FILTER_RESONANCE         #5#  ; [0-1]
 #define PART_FILTER_TYPE              #6#  ; 0: none, 1: lp, 2: hp, 3: bp
 #define PART_PAN                      #7#  ; [0-1] default 0.5 is center
-#define PART_DISTORTION_AMOUNT        #8#  ; [0-1] default 0
+#define PART_DISTORTION               #8#  ; [0-1] default 0
 #define PART_LOOP_START               #9#  ; [0-1]
 #define PART_LOOP_END                 #10# ; [0-1]
 #define PART_LOOP_ON                  #11# ; 0: no looping, !=0: looping
@@ -138,7 +138,7 @@ gamastersigr                                init 0
 #define FX_SEND_REVERB_ROOM_SIZE            #17# ; X [0-1]
 #define FX_SEND_REVERB_DAMPING              #18# ; X [0-1]
 #define FX_SEND_REVERB_WET                  #19# ; X [0-1]
-#define FX_SEND_BIT_REDUCTION               #20# ; X [0-16]
+#define FX_SEND_DISTORTION                  #20# ; X [0-16]
 ;
 #define FX_SEND_COMPRESSOR_RATIO            #21# ; X [1-N]
 #define FX_SEND_COMPRESSOR_THRESHOLD        #22# ; X [-N - 0]
@@ -163,7 +163,7 @@ gamastersigr                                init 0
 #define MASTER_REVERB_ROOM_SIZE             #6#
 #define MASTER_REVERB_DAMPING               #7#
 #define MASTER_REVERB_WET                   #8#
-#define MASTER_BIT_REDUCTION                #9#
+#define MASTER_DISTORTION                   #9#
 #define MASTER_COMPRESSOR_RATIO             #10#
 #define MASTER_COMPRESSOR_THRESHOLD         #11#
 #define MASTER_COMPRESSOR_ATTACK            #12#
@@ -238,7 +238,7 @@ instr SetPartFilterType
     turnoff
 endin
 instr SetPartDistortion
-    tabw_i p5, $PART_DISTORTION_AMOUNT, p4
+    tabw_i p5, $PART_DISTORTION, p4
     turnoff
 endin
 instr SetPartPan
@@ -391,8 +391,8 @@ instr SetFXSendReverbWet
     tabw_i p5, $FX_SEND_REVERB_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
-instr SetFXSendBitReduction
-    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
+instr SetFXSendDistortion
+    tabw_i p5, $FX_SEND_DISTORTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorRatio
@@ -467,8 +467,8 @@ instr SetMasterReverbWet
     tabw_i p4, $MASTER_REVERB_WET, $MASTER_FTABLE_OFFSET
     turnoff
 endin
-instr SetMasterBitReduction
-    tabw_i p4, $MASTER_BIT_REDUCTION, $MASTER_FTABLE_OFFSET
+instr SetMasterDistortion
+    tabw_i p4, $MASTER_DISTORTION, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 instr SetMasterCompressorRatio
@@ -515,6 +515,7 @@ iftablenumber   init p4
                 tabw_i 1                          , $PART_LOOP_END                , iftablenumber
                 tabw_i 0                          , $PART_LOOP_ON                 , iftablenumber
                 tabw_i 0                          , $PART_REVERSE                 , iftablenumber
+                tabw_i 0                          , $PART_DISTORTION              , iftablenumber
                 tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
                 tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
                 ;
@@ -582,7 +583,7 @@ iftablenumber   init p4
                 tabw_i 0.8, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
                 tabw_i 0.8, $FX_SEND_REVERB_DAMPING , iftablenumber
                 tabw_i 0, $FX_SEND_REVERB_WET , iftablenumber
-                tabw_i 0, $FX_SEND_BIT_REDUCTION , iftablenumber
+                tabw_i 0, $FX_SEND_DISTORTION, iftablenumber
                 ;
                 tabw_i 0, $FX_SEND_COMPRESSOR_RATIO , iftablenumber
                 tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD , iftablenumber
@@ -644,7 +645,7 @@ iftablenumber   init p4
                 tabw_i 0.4, $MASTER_REVERB_ROOM_SIZE , iftablenumber
                 tabw_i 0.7, $MASTER_REVERB_DAMPING , iftablenumber
                 tabw_i 0, $MASTER_REVERB_WET , iftablenumber
-                tabw_i 0, $MASTER_BIT_REDUCTION , iftablenumber
+                tabw_i 0, $MASTER_DISTORTION, iftablenumber
                 tabw_i 0, $MASTER_COMPRESSOR_RATIO , iftablenumber
                 tabw_i 0, $MASTER_COMPRESSOR_THRESHOLD , iftablenumber
                 tabw_i 0, $MASTER_COMPRESSOR_ATTACK , iftablenumber
@@ -935,7 +936,7 @@ kfiltercutoff       tab $PART_FILTER_CUTOFF             , ipartnumber
 kfilterresonance    tab $PART_FILTER_RESONANCE          , ipartnumber
 kfiltertype         tab $PART_FILTER_TYPE               , ipartnumber
 kpan                tab $PART_PAN                       , ipartnumber
-kdistortionamount   tab $PART_DISTORTION_AMOUNT         , ipartnumber
+kdistortion         tab $PART_DISTORTION                , ipartnumber
 kreverse            init tab_i($PART_REVERSE, ipartnumber) ; <--- this was a massive bug, apparently we need to init this lest PlayPart & PlayTable wouldn't receive the correct updated value
                                                            ; <--- we might need to do this to the other part parameters too
 kreverse            tab $PART_REVERSE                   , ipartnumber
@@ -1080,10 +1081,10 @@ asigl           *= kampenvelope
 asigr           *= kampenvelope
             ;
             ; apply distortion 
-            #define MAX_DISTORTION #66#
-            if(kdistortionamount > 0) then
-                asigl   distort1 asigl, kdistortionamount * $MAX_DISTORTION , 1, 1, 0
-                asigr   distort1 asigr, kdistortionamount * $MAX_DISTORTION , 1, 1, 0
+            #define MAX_DISTORTION_PART #66#
+            if (kdistortion > 0) then
+                asigl   distort1 asigl, kdistortion * $MAX_DISTORTION_PART, 1, 1, 0
+                asigr   distort1 asigr, kdistortion * $MAX_DISTORTION_PART, 1, 1, 0
             endif
             ;
             ; output on either master or one of the fxsends
@@ -1209,7 +1210,7 @@ kringmodfrequency               tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
 kreverbroomsize                 tab $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
 kreverbdamping                  tab $FX_SEND_REVERB_DAMPING, iftablenumber
 kreverbwet                      tab $FX_SEND_REVERB_WET, iftablenumber
-kbitreduction                   tab $FX_SEND_BIT_REDUCTION, iftablenumber
+kdistortionamount               tab $FX_SEND_DISTORTION, iftablenumber
                                 ;
 kcompressorratio                tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 kcompressorthreshold            tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
@@ -1316,16 +1317,11 @@ asigr           = (kreverbdry * asigr) + (kreverbwet * asigreverboutr)
                 donereverb:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; bitcrusher
-;
-; adapted from LoFi.csd found here:
-; http://iainmccurdy.org/csound.html
-;
-if (kbitreduction > 0) then 
-    k_bitdepth  = 16 - kbitreduction        ; 0 -> 16  , 16 -> 1 
-    k_values    pow 2, k_bitdepth
-    asigl       = (int((asigl/0dbfs)*k_values))/k_values
-    asigr       = (int((asigr/0dbfs)*k_values))/k_values
+; distortion
+#define MAX_DISTORTION_FX_SEND #66#
+if(kdistortionamount > 0) then
+    asigl   distort1 asigl, kdistortionamount * $MAX_DISTORTION_FX_SEND, 1, 1, 0
+    asigr   distort1 asigr, kdistortionamount * $MAX_DISTORTION_FX_SEND, 1, 1, 0
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1392,7 +1388,7 @@ kmastereqhighcornerfrequency    tab $MASTER_EQ_HIGH_CORNER_FREQUENCY, iftablenum
 kmasterreverbroomsize           tab $MASTER_REVERB_ROOM_SIZE, iftablenumber
 kmasterreverbdamping            tab $MASTER_REVERB_DAMPING, iftablenumber
 kmasterreverbwet                tab $MASTER_REVERB_WET, iftablenumber
-kmasterbitreduction             tab $MASTER_BIT_REDUCTION, iftablenumber
+kmasterdistortionamount         tab $MASTER_DISTORTION, iftablenumber
 kmastercompressorratio          tab $MASTER_COMPRESSOR_RATIO, iftablenumber
 kmastercompressorthreshold      tab $MASTER_COMPRESSOR_THRESHOLD, iftablenumber
 kmastercompressorattack         tab $MASTER_COMPRESSOR_ATTACK, iftablenumber
@@ -1438,16 +1434,11 @@ gamastersigl            = (kmasterreverbdry * gamastersigl) + (kmasterreverbwet 
 gamastersigr            = (kmasterreverbdry * gamastersigr) + (kmasterreverbwet * amastersigreverboutr)
                         donemasterreverb:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; bitcrusher
-;
-; adapted from LoFi.csd found here:
-; http://iainmccurdy.org/csound.html
-;
-if (kmasterbitreduction > 0) then 
-    k_bitdepth      = 16 - kmasterbitreduction      ; 0 -> 16  , 16 -> 1 
-    k_values        pow 2, k_bitdepth
-    gamastersigl    = (int((gamastersigl/0dbfs)*k_values))/k_values
-    gamastersigr    = (int((gamastersigr/0dbfs)*k_values))/k_values
+; distortion 
+#define MAX_DISTORTION_MASTER #66#
+if(kmasterdistortionamount > 0) then
+    gamastersigl  distort1 gamastersigl, kmasterdistortionamount * $MAX_DISTORTION_MASTER, 1, 1, 0
+    gamastersigr  distort1 gamastersigr, kmasterdistortionamount * $MAX_DISTORTION_MASTER, 1, 1, 0
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
