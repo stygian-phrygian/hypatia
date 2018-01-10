@@ -144,8 +144,9 @@ gamastersigr                                init 0
 #define FX_SEND_COMPRESSOR_THRESHOLD        #22# ; X [-N - 0]
 #define FX_SEND_COMPRESSOR_ATTACK           #23# ; X
 #define FX_SEND_COMPRESSOR_RELEASE          #24# ; X
-#define FX_SEND_COMPRESSOR_GAIN             #25# ; X
-#define FX_SEND_GAIN                        #26# ; X
+#define FX_SEND_COMPRESSOR_SIDECHAIN        #25# ; [1 - NUMBER_OF_FX_SENDS]
+#define FX_SEND_COMPRESSOR_GAIN             #26# ; X
+#define FX_SEND_GAIN                        #27# ; X
 
 ; master state
 ; macros which:
@@ -410,6 +411,10 @@ instr SetFXSendCompressorRelease
     tabw_i p5, $FX_SEND_COMPRESSOR_RELEASE, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
+instr SetFXSendCompressorSideChain
+    tabw_i p5, $FX_SEND_COMPRESSOR_SIDECHAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    turnoff
+endin
 instr SetFXSendCompressorGain
     tabw_i p5, $FX_SEND_COMPRESSOR_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
@@ -583,6 +588,7 @@ iftablenumber   init p4
                 tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD , iftablenumber
                 tabw_i 0.1, $FX_SEND_COMPRESSOR_ATTACK , iftablenumber
                 tabw_i 0.2, $FX_SEND_COMPRESSOR_RELEASE , iftablenumber
+                tabw_i 0, $FX_SEND_COMPRESSOR_SIDECHAIN, iftablenumber
                 tabw_i 1, $FX_SEND_COMPRESSOR_GAIN , iftablenumber
                 tabw_i 1, $FX_SEND_GAIN , iftablenumber
                 ;
@@ -1209,6 +1215,7 @@ kcompressorratio                tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 kcompressorthreshold            tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
 kcompressorattack               tab $FX_SEND_COMPRESSOR_ATTACK, iftablenumber
 kcompressorrelease              tab $FX_SEND_COMPRESSOR_RELEASE, iftablenumber
+kcompressorsidechain            tab $FX_SEND_COMPRESSOR_SIDECHAIN, iftablenumber
 kcompressorgain                 tab $FX_SEND_COMPRESSOR_GAIN, iftablenumber
 kgain                           tab $FX_SEND_GAIN, iftablenumber
 
@@ -1327,13 +1334,31 @@ endif
 #define LOWKNEE     #48#        ; * hard knee only *
 #define HIGHKNEE    #48#        ;
 if (kcompressorratio > 1) then
-    ; compress it
-    asigl   compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
-    asigr   compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
-    ; apply post gain
-    asigl   *= kcompressorgain
-    asigr   *= kcompressorgain
+    ;
+    ; ducking
+    if(kcompressorsidechain >= 1) then
+        ; get zak indices of the fxsend output
+        kfxsendzakl  = int(2 * (kcompressorsidechain - 1))
+        kfxsendzakr  = kfxsendzakl + 1
+                    ;
+                    ; read in audio input from the zak channels (fxsend output)
+                    ; (this will likely explode if you give it a non-existent channel index)
+        afxsendoutl zar kfxsendzakl
+        afxsendoutr zar kfxsendzakr
+        ;
+        ; pipe the received fxsend signal into our compressor to use as a sidechain ducking effect
+        asigl   compress asigl, afxsendoutl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+        asigr   compress asigr, afxsendoutr+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+    ;
+    ; compressing
+    else
+        asigl   compress asigl, asigl+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+        asigr   compress asigr, asigr+0.0001, kcompressorthreshold, $LOWKNEE , $HIGHKNEE , kcompressorratio, kcompressorattack, kcompressorrelease, 0
+    endif
 endif
+; apply compressor post gain
+asigl   *= kcompressorgain
+asigr   *= kcompressorgain
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; gain
