@@ -83,7 +83,7 @@ Audio Input -> Master
 Audio Input -> FXSend -> Master
 
 The FXSend effects chain is:
-    3-band EQ -> chorus -> delay -> ringmod -> reverb -> distortion -> compressor -> gain
+    3-band EQ -> chorus -> delay -> ringmod -> bitcrusher -> distortion -> reverb -> compressor -> gain
 
 The Master effects chain is:
     3-band EQ -> reverb -> distortion -> compressor -> gain
