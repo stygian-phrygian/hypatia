@@ -135,18 +135,19 @@ gamastersigr                                init 0
 #define FX_SEND_DELAY_WET                   #15# ; X [0-1]
 #define FX_SEND_RING_MOD_FREQUENCY          #16# ; X
 ;
-#define FX_SEND_REVERB_ROOM_SIZE            #17# ; X [0-1]
-#define FX_SEND_REVERB_DAMPING              #18# ; X [0-1]
-#define FX_SEND_REVERB_WET                  #19# ; X [0-1]
-#define FX_SEND_DISTORTION                  #20# ; X [0-16]
+#define FX_SEND_BIT_REDUCTION               #17# ; X [0-16]
 ;
-#define FX_SEND_COMPRESSOR_RATIO            #21# ; X [1-N]
-#define FX_SEND_COMPRESSOR_THRESHOLD        #22# ; X [-N - 0]
-#define FX_SEND_COMPRESSOR_ATTACK           #23# ; X
-#define FX_SEND_COMPRESSOR_RELEASE          #24# ; X
-#define FX_SEND_COMPRESSOR_SIDECHAIN        #25# ; [1 - NUMBER_OF_FX_SENDS]
-#define FX_SEND_COMPRESSOR_GAIN             #26# ; X
-#define FX_SEND_GAIN                        #27# ; X
+#define FX_SEND_REVERB_ROOM_SIZE            #18# ; X [0-1]
+#define FX_SEND_REVERB_DAMPING              #19# ; X [0-1]
+#define FX_SEND_REVERB_WET                  #20# ; X [0-1]
+;
+#define FX_SEND_COMPRESSOR_RATIO            #22# ; X [1-N]
+#define FX_SEND_COMPRESSOR_THRESHOLD        #23# ; X [-N - 0]
+#define FX_SEND_COMPRESSOR_ATTACK           #24# ; X
+#define FX_SEND_COMPRESSOR_RELEASE          #25# ; X
+#define FX_SEND_COMPRESSOR_SIDECHAIN        #26# ; [1 - NUMBER_OF_FX_SENDS]
+#define FX_SEND_COMPRESSOR_GAIN             #27# ; X
+#define FX_SEND_GAIN                        #28# ; X
 
 ; master state
 ; macros which:
@@ -391,8 +392,8 @@ instr SetFXSendReverbWet
     tabw_i p5, $FX_SEND_REVERB_WET, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
-instr SetFXSendDistortion
-    tabw_i p5, $FX_SEND_DISTORTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
+instr SetFXSendBitReduction
+    tabw_i p5, $FX_SEND_BIT_REDUCTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendCompressorRatio
@@ -583,7 +584,7 @@ iftablenumber   init p4
                 tabw_i 0.8, $FX_SEND_REVERB_ROOM_SIZE , iftablenumber
                 tabw_i 0.8, $FX_SEND_REVERB_DAMPING , iftablenumber
                 tabw_i 0, $FX_SEND_REVERB_WET , iftablenumber
-                tabw_i 0, $FX_SEND_DISTORTION, iftablenumber
+                tabw_i 16, $FX_SEND_BIT_REDUCTION, iftablenumber
                 ;
                 tabw_i 0, $FX_SEND_COMPRESSOR_RATIO , iftablenumber
                 tabw_i 0, $FX_SEND_COMPRESSOR_THRESHOLD , iftablenumber
@@ -1081,7 +1082,7 @@ asigl           *= kampenvelope
 asigr           *= kampenvelope
             ;
             ; apply distortion 
-            #define MAX_DISTORTION_PART #66#
+            #define MAX_DISTORTION_PART #123#
             if (kdistortion > 0) then
                 asigl   distort1 asigl, kdistortion * $MAX_DISTORTION_PART, 1, 1, 0
                 asigr   distort1 asigr, kdistortion * $MAX_DISTORTION_PART, 1, 1, 0
@@ -1210,7 +1211,7 @@ kringmodfrequency               tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
 kreverbroomsize                 tab $FX_SEND_REVERB_ROOM_SIZE, iftablenumber
 kreverbdamping                  tab $FX_SEND_REVERB_DAMPING, iftablenumber
 kreverbwet                      tab $FX_SEND_REVERB_WET, iftablenumber
-kdistortionamount               tab $FX_SEND_DISTORTION, iftablenumber
+kbitreduction                   tab $FX_SEND_BIT_REDUCTION, iftablenumber
                                 ;
 kcompressorratio                tab $FX_SEND_COMPRESSOR_RATIO, iftablenumber
 kcompressorthreshold            tab $FX_SEND_COMPRESSOR_THRESHOLD, iftablenumber
@@ -1295,6 +1296,18 @@ asigl           = (kdelaydry * asigl) + (kdelaywet * asigdelayl)
 asigr           = (kdelaydry * asigr) + (kdelaywet * asigdelayr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; bitcrusher
+;
+; adapted from LoFi.csd found here:
+; http://iainmccurdy.org/csound.html
+;
+if (kbitreduction < 16) then
+    k_bitdepth  = kbitreduction
+    k_values    pow 2, k_bitdepth
+    asigl       = (int((asigl/0dbfs)*k_values))/k_values
+    asigr       = (int((asigr/0dbfs)*k_values))/k_values
+endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
 ;
                 if(kreverbwet <= 0) kgoto donereverb
@@ -1315,15 +1328,6 @@ asigl           = (kreverbdry * asigl) + (kreverbwet * asigreverboutl)
 asigr           = (kreverbdry * asigr) + (kreverbwet * asigreverboutr)
 ;
                 donereverb:
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; distortion
-#define MAX_DISTORTION_FX_SEND #66#
-if(kdistortionamount > 0) then
-    asigl   distort1 asigl, kdistortionamount * $MAX_DISTORTION_FX_SEND, 1, 1, 0
-    asigr   distort1 asigr, kdistortionamount * $MAX_DISTORTION_FX_SEND, 1, 1, 0
-endif
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; compressor/limiter/ducker
 ;
@@ -1434,8 +1438,8 @@ gamastersigl            = (kmasterreverbdry * gamastersigl) + (kmasterreverbwet 
 gamastersigr            = (kmasterreverbdry * gamastersigr) + (kmasterreverbwet * amastersigreverboutr)
                         donemasterreverb:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; distortion 
-#define MAX_DISTORTION_MASTER #66#
+; distortion
+#define MAX_DISTORTION_MASTER #123#
 if(kmasterdistortionamount > 0) then
     gamastersigl  distort1 gamastersigl, kmasterdistortionamount * $MAX_DISTORTION_MASTER, 1, 1, 0
     gamastersigr  distort1 gamastersigr, kmasterdistortionamount * $MAX_DISTORTION_MASTER, 1, 1, 0
@@ -1464,8 +1468,8 @@ gamastersigr        *= kmastergain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;                   clip everything
-gamastersigl        clip gamastersigl, 2, 1.0
-gamastersigr        clip gamastersigr, 2, 1.0
+; gamastersigl        clip gamastersigl, 2, 1.0
+; gamastersigr        clip gamastersigr, 2, 1.0
 
 ;                   output to DAC
                     outs gamastersigl, gamastersigr
