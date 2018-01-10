@@ -1332,7 +1332,7 @@ endif
 if (kcompressorratio > 1) then
     ;
     ; ducking
-    if(kcompressorsidechain >= 1) then
+    if(kcompressorsidechain >= 1 && kcompressorsidechain <= $NUMBER_OF_FX_SENDS) then
         ; get zak indices of the fxsend output
         kfxsendzakl  = int(2 * (kcompressorsidechain - 1))
         kfxsendzakr  = kfxsendzakl + 1
