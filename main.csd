@@ -145,8 +145,8 @@ gamastersigr                                init 0
 #define FX_SEND_REVERB_DAMPING              #20# ; X [0-1]
 #define FX_SEND_REVERB_WET                  #21# ; X [0-1]
 ;
-#define FX_SEND_COMPRESSOR_RATIO            #23# ; X [1-N]
-#define FX_SEND_COMPRESSOR_THRESHOLD        #24# ; X [-N - 0]
+#define FX_SEND_COMPRESSOR_RATIO            #23# ; X [1-N]    ; <--- in decibels
+#define FX_SEND_COMPRESSOR_THRESHOLD        #24# ; X [-N - 0] ; <---
 #define FX_SEND_COMPRESSOR_ATTACK           #25# ; X
 #define FX_SEND_COMPRESSOR_RELEASE          #26# ; X
 #define FX_SEND_COMPRESSOR_SIDECHAIN        #27# ; [1 - NUMBER_OF_FX_SENDS]
@@ -940,7 +940,7 @@ reinitialize_instrument:
                     ;
 ipartnumber         init p4
 inotenumber         init p5
-                    ; grab snapshot of current part state 
+                    ; grab snapshot of current part state
                     ; all the p-values are relative values to whatever the part currently has
                     ; as such, we can edit the part parameters in realtime with realtime reflection of changes (for most but not all)
                     ; all the i-values can be edited during playback but won't reflect changes until the part is retriggered
