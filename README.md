@@ -83,10 +83,10 @@ Audio Input -> Master
 Audio Input -> FXSend -> Master
 
 The FXSend effects chain is:
-    3-band EQ -> chorus -> delay -> ringmod -> reverb -> bitcrusher -> compressor -> gain
+    3-band EQ -> chorus -> delay -> ringmod -> reverb -> distortion -> compressor -> gain
 
 The Master effects chain is:
-    3-band EQ -> reverb -> -> bitcrusher -> compressor -> gain
+    3-band EQ -> reverb -> distortion -> compressor -> gain
 
 Recorded audio can come from the hardware audio input *or* from the Master output (ie. resampling).
 Recorded audio can then be loaded into a sample slot (which should be set to a Part for playback)
@@ -114,8 +114,9 @@ Recording can happen during playback too.
 - SetPartFilterType
 - SetPartDistortion
 - SetPartPan
-- SetPartTimestretchFactor
-- SetPartTimestretchWindowSize
+- SetLoopStart
+- SetLoopEnd
+- SetLoopOn
 - SetPartReverse
 - SetPartSendDestination
 - SetPartSendWet
@@ -146,7 +147,7 @@ Recording can happen during playback too.
 - SetFXSendReverbRoomSize
 - SetFXSendReverbDamping
 - SetFXSendReverbWet
-- SetFXSendBitReduction
+- SetFXSendDistortion
 - SetFXSendCompressorRatio
 - SetFXSendCompressorThreshold
 - SetFXSendCompressorAttack
@@ -162,7 +163,7 @@ Recording can happen during playback too.
 - SetMasterReverbRoomSize
 - SetMasterReverbDamping
 - SetMasterReverbWet
-- SetMasterBitReduction
+- SetMasterDistortion
 - SetMasterCompressorRatio
 - SetMasterCompressorThreshold
 - SetMasterCompressorAttack
