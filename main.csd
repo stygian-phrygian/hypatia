@@ -104,10 +104,10 @@ gamastersigr                                init 0
 #define PART_AMP_DECAY                #16# ; N
 #define PART_AMP_SUSTAIN_LEVEL        #17# ; N
 #define PART_AMP_RELEASE              #18# ; N
-#define PART_ENV1_ATTACK              #20# ; N
-#define PART_ENV1_DECAY               #21# ; N
-#define PART_ENV1_DEPTH               #22# ; M where M <= -1 || M >= 1
-#define PART_ENV1_DESTINATION         #23# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_MOD_ATTACK              #20# ; N
+#define PART_MOD_DECAY               #21# ; N
+#define PART_MOD_DEPTH               #22# ; M where M <= -1 || M >= 1
+#define PART_MOD_DESTINATION         #23# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; fx send state
@@ -297,20 +297,20 @@ instr SetPartAmpRelease
     tabw_i p5, $PART_AMP_RELEASE, p4
     turnoff
 endin
-instr SetPartEnv1Attack
-    tabw_i p5, $PART_ENV1_ATTACK,p4
+instr SetPartModAttack
+    tabw_i p5, $PART_MOD_ATTACK,p4
     turnoff
 endin
-instr SetPartEnv1Decay
-    tabw_i p5, $PART_ENV1_DECAY,p4
+instr SetPartModDecay
+    tabw_i p5, $PART_MOD_DECAY,p4
     turnoff
 endin
-instr SetPartEnv1Depth
-    tabw_i p5, $PART_ENV1_DEPTH,p4
+instr SetPartModDepth
+    tabw_i p5, $PART_MOD_DEPTH,p4
     turnoff
 endin
-instr SetPartEnv1Destination
-    tabw_i p5, $PART_ENV1_DESTINATION,p4
+instr SetPartModDestination
+    tabw_i p5, $PART_MOD_DESTINATION,p4
     turnoff
 endin
 
@@ -533,7 +533,7 @@ iftablenumber   init p4
                 tabw_i 0                          , $PART_REVERSE                 , iftablenumber
                 tabw_i 0                          , $PART_DISTORTION              , iftablenumber
                 tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
-                tabw_i 1                          , $PART_ENV1_DEPTH              , iftablenumber
+                tabw_i 1                          , $PART_MOD_DEPTH              , iftablenumber
                 ;
                 prints "[InitializePart] initialized Part on ftable # %d\n", iftablenumber
                 turnoff
@@ -977,10 +977,10 @@ kampattack          tab $PART_AMP_ATTACK                , ipartnumber
 kampdecay           tab $PART_AMP_DECAY                 , ipartnumber
 kampsustainlevel    tab $PART_AMP_SUSTAIN_LEVEL         , ipartnumber
 kamprelease         tab $PART_AMP_RELEASE               , ipartnumber
-kenv1attack         tab $PART_ENV1_ATTACK               , ipartnumber
-kenv1decay          tab $PART_ENV1_DECAY                , ipartnumber
-kenv1depth          tab $PART_ENV1_DEPTH                , ipartnumber
-kenv1destination    tab $PART_ENV1_DESTINATION          , ipartnumber
+kenv1attack         tab $PART_MOD_ATTACK               , ipartnumber
+kenv1decay          tab $PART_MOD_DECAY                , ipartnumber
+kenv1depth          tab $PART_MOD_DEPTH                , ipartnumber
+kenv1destination    tab $PART_MOD_DESTINATION          , ipartnumber
                     ;
                     ; if user changed sample offset in realtime, reinit this instrument
                     if ( ksampleoffset != isampleoffset ) then
