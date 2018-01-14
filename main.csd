@@ -104,10 +104,10 @@ gamastersigr                                init 0
 #define PART_AMP_DECAY                #16# ; N
 #define PART_AMP_SUSTAIN_LEVEL        #17# ; N
 #define PART_AMP_RELEASE              #18# ; N
-#define PART_MOD_ATTACK              #20# ; N
-#define PART_MOD_DECAY               #21# ; N
-#define PART_MOD_DEPTH               #22# ; M where M <= -1 || M >= 1
-#define PART_MOD_DESTINATION         #23# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
+#define PART_MOD_ATTACK               #20# ; N
+#define PART_MOD_DECAY                #21# ; N
+#define PART_MOD_DEPTH                #22# ; M where M <= -1 || M >= 1
+#define PART_MOD_DESTINATION          #23# ; 0: pitch, 1: filter-cutoff, 2: pitch & filter-cutoff
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; fx send state
@@ -138,12 +138,13 @@ gamastersigr                                init 0
 #define FX_SEND_RING_MOD_FREQUENCY          #16# ; X
 ;
 #define FX_SEND_BIT_DEPTH                   #17# ; X [0-16]
+#define FX_SEND_SR_FOLD                     #18# ; X [1-N]
 ;
-#define FX_SEND_DISTORTION                  #18# ; X [0-1]
+#define FX_SEND_DISTORTION                  #19# ; X [0-1]
 ;
-#define FX_SEND_REVERB_ROOM_SIZE            #19# ; X [0-1]
-#define FX_SEND_REVERB_DAMPING              #20# ; X [0-1]
-#define FX_SEND_REVERB_WET                  #21# ; X [0-1]
+#define FX_SEND_REVERB_ROOM_SIZE            #20# ; X [0-1]
+#define FX_SEND_REVERB_DAMPING              #21# ; X [0-1]
+#define FX_SEND_REVERB_WET                  #22# ; X [0-1]
 ;
 #define FX_SEND_COMPRESSOR_RATIO            #23# ; X [1-N]    ; <--- in decibels
 #define FX_SEND_COMPRESSOR_THRESHOLD        #24# ; X [-N - 0] ; <---
@@ -407,6 +408,10 @@ instr SetFXSendBitDepth
     tabw_i p5, $FX_SEND_BIT_DEPTH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
+instr SetFXSendSRFold
+    tabw_i p5, $FX_SEND_SR_FOLD, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    turnoff
+endin
 instr SetFXSendDistortion
     tabw_i p5, $FX_SEND_DISTORTION, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
@@ -597,6 +602,7 @@ iftablenumber   init p4
                 tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
                 ;
                 tabw_i 16, $FX_SEND_BIT_DEPTH, iftablenumber
+                tabw_i 1, $FX_SEND_SR_FOLD, iftablenumber
                 ;
                 tabw_i 0, $FX_SEND_DISTORTION, iftablenumber
                 ;
@@ -1226,6 +1232,7 @@ kdelaywet                       tab $FX_SEND_DELAY_WET, iftablenumber
 kringmodfrequency               tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
                                 ;
 kbitdepth                       tab $FX_SEND_BIT_DEPTH, iftablenumber
+ksrfold                         tab $FX_SEND_SR_FOLD, iftablenumber
                                 ;
 kdistortion                     tab $FX_SEND_DISTORTION, iftablenumber
                                 ;
@@ -1321,10 +1328,16 @@ asigr           = (kdelaydry * asigr) + (kdelaywet * asigdelayr)
 ; adapted from LoFi.csd found here:
 ; http://iainmccurdy.org/csound.html
 ;
+; bit depth
 if (kbitdepth < 16) then
     k_values    pow 2, kbitdepth
     asigl       = (int((asigl/0dbfs)*k_values))/k_values
     asigr       = (int((asigr/0dbfs)*k_values))/k_values
+endif
+; sample rate folding
+if (ksrfold > 1) then
+    asigl       fold asigl, ksrfold
+    asigr       fold asigr, ksrfold
 endif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; distortion
