@@ -117,9 +117,9 @@ gamastersigr                                init 0
 #define NUMBER_OF_PARAMETERS_PER_FX_SEND    #32#
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; X where X is any real number
-#define FX_SEND_EQ_GAIN_LOW                 #0# ; X [0-1]
-#define FX_SEND_EQ_GAIN_MID                 #1# ; X ""
-#define FX_SEND_EQ_GAIN_HIGH                #2# ; X ""
+#define FX_SEND_EQ_GAIN_LOW                 #0# ; X [0-1]       ; decibels
+#define FX_SEND_EQ_GAIN_MID                 #1# ; X ""          ; ""
+#define FX_SEND_EQ_GAIN_HIGH                #2# ; X ""          ; ""
 #define FX_SEND_EQ_LOW_CORNER_FREQUENCY     #3# ; X [0-20000]
 #define FX_SEND_EQ_MID_PEAKING_FREQUENCY    #4# ; X ""
 #define FX_SEND_EQ_HIGH_CORNER_FREQUENCY    #5# ; X ""
@@ -152,8 +152,8 @@ gamastersigr                                init 0
 #define FX_SEND_COMPRESSOR_ATTACK           #26# ; X
 #define FX_SEND_COMPRESSOR_RELEASE          #27# ; X
 #define FX_SEND_COMPRESSOR_SIDECHAIN        #28# ; [1 - NUMBER_OF_FX_SENDS]
-#define FX_SEND_COMPRESSOR_GAIN             #29# ; X
-#define FX_SEND_GAIN                        #30# ; X
+#define FX_SEND_COMPRESSOR_GAIN             #29# ; X          ; decibels
+#define FX_SEND_GAIN                        #30# ; X          ; decibels
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; master state
@@ -162,9 +162,9 @@ gamastersigr                                init 0
 ;     index into an ftable (which represents a master's current parameter state)
 #define NUMBER_OF_PARAMETERS_PER_MASTER     #16#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Same domain as FXSend parameters
-#define MASTER_EQ_GAIN_LOW                  #0#
-#define MASTER_EQ_GAIN_MID                  #1#
-#define MASTER_EQ_GAIN_HIGH                 #2#
+#define MASTER_EQ_GAIN_LOW                  #0#               ; decibels
+#define MASTER_EQ_GAIN_MID                  #1#               ; ""
+#define MASTER_EQ_GAIN_HIGH                 #2#               ; ""
 #define MASTER_EQ_LOW_CORNER_FREQUENCY      #3#
 #define MASTER_EQ_MID_PEAKING_FREQUENCY     #4#
 #define MASTER_EQ_HIGH_CORNER_FREQUENCY     #5#
@@ -176,8 +176,8 @@ gamastersigr                                init 0
 #define MASTER_COMPRESSOR_THRESHOLD         #11#
 #define MASTER_COMPRESSOR_ATTACK            #12#
 #define MASTER_COMPRESSOR_RELEASE           #13#
-#define MASTER_COMPRESSOR_GAIN              #14#
-#define MASTER_GAIN                         #15#
+#define MASTER_COMPRESSOR_GAIN              #14#              ; decibels
+#define MASTER_GAIN                         #15#              ; ""
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; macro for distort1 opcode used in some of the instruments
@@ -326,15 +326,18 @@ endin
 ;
 ;
 instr SetFXSendEQGainLow
-    tabw_i p5, $FX_SEND_EQ_GAIN_LOW, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    igain = ampdb(p5)
+    tabw_i igain, $FX_SEND_EQ_GAIN_LOW, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQGainMid
-    tabw_i p5, $FX_SEND_EQ_GAIN_MID, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    igain = ampdb(p5)
+    tabw_i igain, $FX_SEND_EQ_GAIN_MID, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQGainHigh
-    tabw_i p5, $FX_SEND_EQ_GAIN_HIGH, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    igain = ampdb(p5)
+    tabw_i igain, $FX_SEND_EQ_GAIN_HIGH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendEQLowCornerFrequency
@@ -442,11 +445,13 @@ instr SetFXSendCompressorSideChain
     turnoff
 endin
 instr SetFXSendCompressorGain
-    tabw_i p5, $FX_SEND_COMPRESSOR_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    igain = ampdb(p5)
+    tabw_i igain, $FX_SEND_COMPRESSOR_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 instr SetFXSendGain
-    tabw_i p5, $FX_SEND_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    igain = ampdb(p5)
+    tabw_i igain, $FX_SEND_GAIN, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
 
@@ -458,15 +463,18 @@ endin
 ;
 ;
 instr SetMasterEQGainLow
-    tabw_i p4, $MASTER_EQ_GAIN_LOW, $MASTER_FTABLE_OFFSET
+    igain = ampdb(p4)
+    tabw_i igain, $MASTER_EQ_GAIN_LOW, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 instr SetMasterEQGainMid
-    tabw_i p4, $MASTER_EQ_GAIN_MID, $MASTER_FTABLE_OFFSET
+    igain = ampdb(p4)
+    tabw_i igain, $MASTER_EQ_GAIN_MID, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 instr SetMasterEQGainHigh
-    tabw_i p4, $MASTER_EQ_GAIN_HIGH, $MASTER_FTABLE_OFFSET
+    igain = ampdb(p4)
+    tabw_i igain, $MASTER_EQ_GAIN_HIGH, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 instr SetMasterEQLowCornerFrequency
@@ -514,11 +522,13 @@ instr SetMasterCompressorRelease
     turnoff
 endin
 instr SetMasterCompressorGain
-    tabw_i p4, $MASTER_COMPRESSOR_GAIN, $MASTER_FTABLE_OFFSET
+    igain = ampdb(p4)
+    tabw_i igain, $MASTER_COMPRESSOR_GAIN, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 instr SetMasterGain
-    tabw_i p4, $MASTER_GAIN, $MASTER_FTABLE_OFFSET
+    igain = ampdb(p4)
+    tabw_i igain, $MASTER_GAIN, $MASTER_FTABLE_OFFSET
     turnoff
 endin
 
