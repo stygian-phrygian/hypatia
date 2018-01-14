@@ -977,10 +977,10 @@ kampattack          tab $PART_AMP_ATTACK                , ipartnumber
 kampdecay           tab $PART_AMP_DECAY                 , ipartnumber
 kampsustainlevel    tab $PART_AMP_SUSTAIN_LEVEL         , ipartnumber
 kamprelease         tab $PART_AMP_RELEASE               , ipartnumber
-kenv1attack         tab $PART_MOD_ATTACK               , ipartnumber
-kenv1decay          tab $PART_MOD_DECAY                , ipartnumber
-kenv1depth          tab $PART_MOD_DEPTH                , ipartnumber
-kenv1destination    tab $PART_MOD_DESTINATION          , ipartnumber
+kmodattack         tab $PART_MOD_ATTACK               , ipartnumber
+kmoddecay          tab $PART_MOD_DECAY                , ipartnumber
+kmoddepth          tab $PART_MOD_DEPTH                , ipartnumber
+kmoddestination    tab $PART_MOD_DESTINATION          , ipartnumber
                     ;
                     ; if user changed sample offset in realtime, reinit this instrument
                     if ( ksampleoffset != isampleoffset ) then
@@ -993,25 +993,25 @@ kampenvelope        kmadsr kampattack, kampdecay, kampsustainlevel, kamprelease
                     ; scale amp envelope
 kampenvelope        *= kamp
                     ;
-                    ; create env1 (assignable) envelope (this has just attack and decay)
-kenv1envelope       kmadsr kenv1attack, kenv1decay, 0, 0
+                    ; create mod (assignable) envelope (this has just attack and decay)
+kmodenvelope       kmadsr kmodattack, kmoddecay, 0, 0
                     ;
-                    ; scale env1envelope by env1depth
-                    ; env1depth must be > 1 or < -1 to have any effect
-                    ; the original env1 : [ 0 - 1 ]
-                    ; the scaled env1   : [ 1 - env1depth ] or [env1depth - -1]
+                    ; scale modenvelope by moddepth
+                    ; moddepth must be > 1 or < -1 to have any effect
+                    ; the original mod : [ 0 - 1 ]
+                    ; the scaled mod   : [ 1 - moddepth ] or [moddepth - -1]
                     ;
                     ; handle positive depth
-                    if(kenv1depth >= 1) then
-                        kenv1envelope   *= (kenv1depth - 1)
-                        kenv1envelope   += 1
+                    if(kmoddepth >= 1) then
+                        kmodenvelope   *= (kmoddepth - 1)
+                        kmodenvelope   += 1
                     ; handle negative depth
-                    elseif(kenv1depth <= -1) then
-                        kenv1envelope   *= (-1 - kenv1depth)
-                        kenv1envelope   -= 1
+                    elseif(kmoddepth <= -1) then
+                        kmodenvelope   *= (-1 - kmoddepth)
+                        kmodenvelope   -= 1
                     ; handle invalid depth (between -1 and 1)
                     else
-                        kenv1envelope = 1
+                        kmodenvelope = 1
                     endif
                     ;
                     ; determine playback speed
@@ -1022,8 +1022,8 @@ inotenumber2pitch   = pow(2, inotenumber/12)
 kplaybackspeed      *= inotenumber2pitch
                     ;
                     ; determine whether to apply pitch envelope
-                    if(kenv1destination == 0 || kenv1destination == 2 && kenv1depth != 1) then
-                        kplaybackspeed  *= kenv1envelope
+                    if(kmoddestination == 0 || kmoddestination == 2 && kmoddepth != 1) then
+                        kplaybackspeed  *= kmodenvelope
                     endif
                     ;
                     ; determine which ftables our PlayTable opcode is reading from
@@ -1055,9 +1055,9 @@ asigr               PlayTable irightchannel, kplaybackspeed, isampleoffset, kloo
             ; determine whether to apply filter or not
             if (kfiltertype != 0) then
                 ; determine whether to apply filter envelope to the filter cutoff  
-                if (kenv1destination >= 1 && kenv1depth != 1) then
-                                    ; scale filter cutoff by env1 envelope
-                    kfiltercutoff   *= kenv1envelope
+                if (kmoddestination >= 1 && kmoddepth != 1) then
+                                    ; scale filter cutoff by mod envelope
+                    kfiltercutoff   *= kmodenvelope
                 endif
                                 ; we could use the 'scale' opcode (which only operates between 0 - 1) but eh
                                 ; scale filter cutoff [0 - 1] to hz [0 - sr/2]
