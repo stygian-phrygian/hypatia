@@ -136,23 +136,24 @@ gamastersigr                                init 0
 #define FX_SEND_DELAY_RIGHT_FEEDBACK        #14# ; X [0-1]
 #define FX_SEND_DELAY_WET                   #15# ; X [0-1]
 #define FX_SEND_RING_MOD_FREQUENCY          #16# ; X
+#define FX_SEND_RING_MOD_DEPTH              #17# ; X
 ;
-#define FX_SEND_BIT_DEPTH                   #17# ; X [0-16]
-#define FX_SEND_SR_FOLD                     #18# ; X [1-N]
+#define FX_SEND_BIT_DEPTH                   #18# ; X [0-16]
+#define FX_SEND_SR_FOLD                     #19# ; X [1-N]
 ;
-#define FX_SEND_DISTORTION                  #19# ; X [0-1]
+#define FX_SEND_DISTORTION                  #20# ; X [0-1]
 ;
-#define FX_SEND_REVERB_ROOM_SIZE            #20# ; X [0-1]
-#define FX_SEND_REVERB_DAMPING              #21# ; X [0-1]
-#define FX_SEND_REVERB_WET                  #22# ; X [0-1]
+#define FX_SEND_REVERB_ROOM_SIZE            #21# ; X [0-1]
+#define FX_SEND_REVERB_DAMPING              #22# ; X [0-1]
+#define FX_SEND_REVERB_WET                  #23# ; X [0-1]
 ;
-#define FX_SEND_COMPRESSOR_RATIO            #23# ; X [1-N]    ; <--- in decibels
-#define FX_SEND_COMPRESSOR_THRESHOLD        #24# ; X [-N - 0] ; <---
-#define FX_SEND_COMPRESSOR_ATTACK           #25# ; X
-#define FX_SEND_COMPRESSOR_RELEASE          #26# ; X
-#define FX_SEND_COMPRESSOR_SIDECHAIN        #27# ; [1 - NUMBER_OF_FX_SENDS]
-#define FX_SEND_COMPRESSOR_GAIN             #28# ; X
-#define FX_SEND_GAIN                        #29# ; X
+#define FX_SEND_COMPRESSOR_RATIO            #24# ; X [1-N]    ; <--- in decibels
+#define FX_SEND_COMPRESSOR_THRESHOLD        #25# ; X [-N - 0] ; <---
+#define FX_SEND_COMPRESSOR_ATTACK           #26# ; X
+#define FX_SEND_COMPRESSOR_RELEASE          #27# ; X
+#define FX_SEND_COMPRESSOR_SIDECHAIN        #28# ; [1 - NUMBER_OF_FX_SENDS]
+#define FX_SEND_COMPRESSOR_GAIN             #29# ; X
+#define FX_SEND_GAIN                        #30# ; X
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; master state
@@ -392,6 +393,10 @@ instr SetFXSendRingModFrequency
     tabw_i p5, $FX_SEND_RING_MOD_FREQUENCY, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
+instr SetFXSendRingModDepth
+    tabw_i p5, $FX_SEND_RING_MOD_DEPTH, p4 + $FX_SEND_FTABLE_OFFSET - 1
+    turnoff
+endin
 instr SetFXSendReverbRoomSize
     tabw_i p5, $FX_SEND_REVERB_ROOM_SIZE, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
@@ -599,7 +604,9 @@ iftablenumber   init p4
                 tabw_i 0.025, $FX_SEND_DELAY_RIGHT_TIME , iftablenumber
                 tabw_i 0.3, $FX_SEND_DELAY_RIGHT_FEEDBACK , iftablenumber
                 tabw_i 0, $FX_SEND_DELAY_WET , iftablenumber
+                ;
                 tabw_i 0, $FX_SEND_RING_MOD_FREQUENCY , iftablenumber
+                tabw_i 1, $FX_SEND_RING_MOD_DEPTH , iftablenumber
                 ;
                 tabw_i 16, $FX_SEND_BIT_DEPTH, iftablenumber
                 tabw_i 1, $FX_SEND_SR_FOLD, iftablenumber
@@ -1230,6 +1237,7 @@ kdelayrighttime                 tab $FX_SEND_DELAY_RIGHT_TIME, iftablenumber
 kdelayrightfeedback             tab $FX_SEND_DELAY_RIGHT_FEEDBACK, iftablenumber
 kdelaywet                       tab $FX_SEND_DELAY_WET, iftablenumber
 kringmodfrequency               tab $FX_SEND_RING_MOD_FREQUENCY, iftablenumber
+kringmoddepth                   tab $FX_SEND_RING_MOD_DEPTH, iftablenumber
                                 ;
 kbitdepth                       tab $FX_SEND_BIT_DEPTH, iftablenumber
 ksrfold                         tab $FX_SEND_SR_FOLD, iftablenumber
@@ -1297,7 +1305,7 @@ asigr               = (kchorusdry * asigr) + (kchoruswet * asigchorusdelayr)
 ; ring modulation
 ;
 if (kringmodfrequency > 0) then
-    amodband    oscil 1, kringmodfrequency, -1, 0.0
+    amodband    oscil kringmoddepth, kringmodfrequency, -1, 0.0
     asigl       *= amodband
     asigr       *= amodband
 endif
