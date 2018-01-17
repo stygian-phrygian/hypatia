@@ -66,7 +66,7 @@ That is, a part is a sample and an associated group of parameters relevant for s
 One can think of a Part like a track within a DAW (in a sense).
 The parameters of the Part (sample amplitude, filter, distortion, etc.) are all realtime editable.
 
-An FXSend represents a group of parameters relevant for further effects processing
+An FXSend represents a group of parameters relevant for further effects processing.
 After a Part produces audio, the audio can be mixed into an FXSend.
 Basically, it's an effects buss (common to most analog mixers).
 Multiple Parts can mix their audio output simultaneously to one FXSend.
@@ -92,7 +92,7 @@ The Master effects chain is:
 Recorded audio can come from the hardware audio input *or* from the Master output (ie. resampling).
 Recorded audio can then be loaded into a sample slot (which should be set to a Part for playback)
 
-Audio input can only come from 1 source currently.
+Audio input can only come from 1 source currently (no multitrack recording).
 Audio input can be monitored in real-time though.
 Monitored audio input can either flow into master directly or through an FXSend (then master).
 
@@ -110,7 +110,6 @@ Above each instrument is a comment regarding its arguments (not including p2 (st
     * p4: sample slot  : Integer
     * p5: sample file  : String
     * ex: `i "LoadSample" 0 1 3 "909kick.wav"` (load 909kick.wav into slot 3 at time now (0))
-
 
 * PlayPart
     * p4: part            : Integer
