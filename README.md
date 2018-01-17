@@ -3,7 +3,7 @@
 ### What Is This?
 - A sampler engine
 - Written in CSound
-- 1 file
+- 1 file (main.csd)
 
 ## What Does It Do?
 - It records sounds
