@@ -101,7 +101,7 @@ Recording can happen during playback too.
 
 ## Current API:
 Note, the current "API" if you will, is really a collection of CSound instruments.
-The CSound instruments are controlled by score strings which follows the CSound score syntax, namely ["i statements"](http://www.csounds.com/manual/html/i.html).
+The CSound instruments are controlled by score strings which follow the CSound score syntax, namely ["i statements"](http://www.csounds.com/manual/html/i.html).
 Consulting the CSound documentation reveals, the instrument's name, startTime, duration are refered to as p1, p2, and p3 respectively.
 p4, p5, p6.. etc, are the remaining arguments passed into the instrument (and for the following instruments) related to performance aspects.
 Above each instrument is a comment regarding its arguments (not including p2 (startTime) and p3 (duration)).
