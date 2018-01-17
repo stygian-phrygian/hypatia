@@ -50,6 +50,7 @@ This application is controlled by sending CSound score data to it (after booting
 The score data is transmitted through:
 * OSC
 * stdin pipe (if you use a unix-y system and pass -Lstdin as a flag (edit `hypatia` to do so))
+
 The score data activates CSound instruments which resemble an API of sorts.
 See the API below for further details on what the instruments can do.
 The instruments are fairly high-level (ish) however probably not meant to be written by hand.
@@ -62,7 +63,7 @@ A sample is an audio recording.
 
 A Part holds the playback state of a sample.
 That is, a part is a sample and an associated group of parameters relevant for sample playback.
-One can think of a Part like a track within a DAW (in a sense)
+One can think of a Part like a track within a DAW (in a sense).
 The parameters of the Part (sample amplitude, filter, distortion, etc.) are all realtime editable.
 
 An FXSend represents a group of parameters relevant for further effects processing
@@ -133,7 +134,7 @@ Above each instrument is a comment regarding its arguments (not including p2 (st
 * StopMonitoring
     * ex: `i "StopMonitoring" 0 1` (stop audio input monitoring now)
 
-All the SetPartXXX instruments follow this syntax
+All the SetPartXXX instruments follow this syntax:
 `i "SetPartXXX" startTime duration partNumber value`
 * SetPartSample
 * SetPartPitch
@@ -158,7 +159,8 @@ All the SetPartXXX instruments follow this syntax
 * SetPartModDecay
 * SetPartModDepth
 * SetPartModDestination
-All the SetFXSendXXX instruments follow this syntax
+
+All the SetFXSendXXX instruments follow this syntax:
 `i "SetFXSendXXX" startTime duration fxSendNumber value`
 * SetFXSendEQGainLow
 * SetFXSendEQGainMid
@@ -190,7 +192,8 @@ All the SetFXSendXXX instruments follow this syntax
 * SetFXSendCompressorRelease
 * SetFXSendCompressorGain
 * SetFXSendGain
-All the SetMasterXXX instruments follow this syntax
+
+All the SetMasterXXX instruments follow this syntax:
 `i "SetMasterXXX" startTime duration value`
 * SetMasterEQGainLow
 * SetMasterEQGainMid
