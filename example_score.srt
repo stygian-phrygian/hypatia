@@ -1,0 +1,66 @@
+; To run this example add the -Lstdin flag to ./hypatia (which only works on UNIX)
+; Then (in your *unix* terminal) type:
+; ./hypatia < example_score.srt
+
+; The following score assumes that 707kick.wav, 707snare.wav,
+; and 707closedhat.wav are all in the current working directory
+; (wherever main.csd is running). Moreover, that at least 3 Parts and
+; 2 FXSends are allocated booting Hypatia. The defaults when booting are sufficient.
+
+; This is an example (albeit a fraction of the sonic possibilities proffered)
+; of what controlling hypatia would look like. It's CSound score, and I for one
+; would prefer *not* to write this CSound score by hand.
+; I recommend a wrapper language of some ilk to generate the score necessary.
+
+; Nota bene, regarding the score below.
+; Hypatia (CSound really) needs initialization time to create the Part & FXsend
+; ftables before using any of the SetXXX instruments (which themselves
+; modify Part & FXsend ftables). Hence, most of the the instrument calls
+; below aren't at startTime 0, but 1. If this initialization time is not
+; granted, the SetXXX instruments behave in wacky ways
+; (you can read that as don't work at all).
+
+; load samples into sample slots
+i "LoadSample" 0 1 1 "707kick.wav"
+i "LoadSample" 0 1 2 "707snare.wav"
+i "LoadSample" 0 1 3 "707closedhat.wav"
+
+; set part sample slots
+i "SetPartSample" 1 1 1 1
+i "SetPartSample" 1 1 2 2
+i "SetPartSample" 1 1 3 3
+
+; set part --> fxsend routing
+i "SetPartSendDestination" 1 1 2 1
+i "SetPartSendDestination" 1 1 3 2
+i "SetPartSendWet"         1 1 2 0.5
+i "SetPartSendWet"         1 1 3 1
+
+; set fxsend effects
+i "SetFXSendReverbWet"          1 1 1 0.9
+i "SetFXSendReverbRoomSize"     1 1 1 0.7
+i "SetFXSendDelayLeftTime"      1 1 2 0.25
+i "SetFXSendDelayLeftFeedback"  1 1 2 0.5
+i "SetFXSendDelayRightTime"     1 1 2 0.125
+i "SetFXSendDelayRightFeedback" 1 1 2 0.85
+i "SetFXSendDelayWet"           1 1 2 0.5
+
+; sequence (a flat 4/4 time beat)
+; -- kick
+i "PlayPart" 1    1 1 0
+i "PlayPart" 1.50 1 2 0
+i "PlayPart" 2    1 1 0
+i "PlayPart" 2.50 1 1 0
+i "PlayPart" 3    1 1 0
+i "PlayPart" 3.50 1 2 0
+i "PlayPart" 4    1 1 0
+i "PlayPart" 4.50 1 1 0
+; -- snare
+i "PlayPart" 1.50 1 1 0
+i "PlayPart" 2.50 1 2 0
+i "PlayPart" 2.62 1 2 0
+i "PlayPart" 3.50 1 1 0
+i "PlayPart" 4.50 1 2 0
+i "PlayPart" 4.62 1 2 0
+; -- closed hat
+i "PlayPart" 4.50 1 3 0
