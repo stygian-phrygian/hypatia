@@ -168,7 +168,7 @@ All the SetFXSendXXX instruments follow this syntax:
 * SetFXSendEQMidPeakingFrequency
 * SetFXSendEQHighCornerFrequency
 * SetFXSendChorusDelayTime
-* SetFXSendChordDepth
+* SetFXSendChorusDepth
 * SetFXSendChorusRate
 * SetFXSendChorusFeedback
 * SetFXSendChorusWet

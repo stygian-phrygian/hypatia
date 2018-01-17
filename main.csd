@@ -356,7 +356,7 @@ instr SetFXSendChorusDelayTime
     tabw_i p5, $FX_SEND_CHORUS_DELAY_TIME, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
-instr SetFXSendChordDepth
+instr SetFXSendChorusDepth
     tabw_i p5, $FX_SEND_CHORUS_DEPTH, p4 + $FX_SEND_FTABLE_OFFSET - 1
     turnoff
 endin
