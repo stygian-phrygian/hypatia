@@ -1532,7 +1532,7 @@ gamastersigr        *= kmastergain
                     ; clearing gamastersigl & gamastersigr 
                     ; as well as clearing the zak channels
                     ; is handled in ClearAudioChannels
-                    ; (so we can record the output of Master with RecordIntoPart)
+                    ; (so we can record the output of Master with RecordSample)
 
 endin
 
