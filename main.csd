@@ -553,7 +553,7 @@ iftablenumber   init p4
                 tabw_i 0                          , $PART_REVERSE                 , iftablenumber
                 tabw_i 0                          , $PART_DISTORTION              , iftablenumber
                 tabw_i 1                          , $PART_AMP_SUSTAIN_LEVEL       , iftablenumber
-                tabw_i 1                          , $PART_MOD_DEPTH              , iftablenumber
+                tabw_i 1                          , $PART_MOD_DEPTH               , iftablenumber
                 ;
                 prints "[InitializePart] initialized Part on ftable # %d\n", iftablenumber
                 turnoff
