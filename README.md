@@ -75,19 +75,19 @@ A Part can only mix with one FXSend at a time.
 The Master receives the audio output of all the Parts and FXSends, and itself contains further effects.
 
 ## Signal Flow
-Parts -> Master
-*or*
-Parts -> FXSend -> Master
-*or*
-Audio Input -> Master
-*or*
-Audio Input -> FXSend -> Master
+Parts:
+  * Parts -> Master
+  * Parts -> FXSend -> Master
+
+Audio Input:
+  * Audio Input -> Master
+  * Audio Input -> FXSend -> Master
 
 The FXSend effects chain is:
-    3-band EQ -> chorus -> delay -> ringmod -> bitcrusher -> distortion -> reverb -> compressor -> gain
+  * 3-band EQ -> chorus -> delay -> ringmod -> bitcrusher -> distortion -> reverb -> compressor -> gain
 
 The Master effects chain is:
-    3-band EQ -> reverb -> distortion -> compressor -> gain
+  * 3-band EQ -> reverb -> distortion -> compressor -> gain
 
 Recorded audio can come from the hardware audio input *or* from the Master output (ie. resampling).
 Recorded audio can then be loaded into a sample slot (which should be set to a Part for playback)
