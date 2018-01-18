@@ -1122,10 +1122,10 @@ asigr               PlayTable irightchannel, kplaybackspeed, isampleoffset, kloo
 asigl           *= kampenvelope
 asigr           *= kampenvelope
             ;
-            ; apply distortion 
+            ; apply distortion
             if (kdistortion > 0) then
-                asigl   distort1 asigl, kdistortion * $DISTORTION_MAX, 1, 1, 0
-                asigr   distort1 asigr, kdistortion * $DISTORTION_MAX, 1, 1, 0
+                asigl   distort1 asigl, kdistortion * $DISTORTION_MAX, 0, 1, 1
+                asigr   distort1 asigr, kdistortion * $DISTORTION_MAX, 0, 1, 1
             endif
             ;
             ; output on either master or one of the fxsends
@@ -1360,8 +1360,8 @@ endif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; distortion
 if (kdistortion > 0) then
-  asigl   distort1 asigl, kdistortion * $DISTORTION_MAX, 1, 1, 0
-  asigr   distort1 asigr, kdistortion * $DISTORTION_MAX, 1, 1, 0
+  asigl   distort1 asigl, kdistortion * $DISTORTION_MAX, 0, 1, 1
+  asigr   distort1 asigr, kdistortion * $DISTORTION_MAX, 0, 1, 1
 endif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reverb
@@ -1496,8 +1496,8 @@ gamastersigr            = (kmasterreverbdry * gamastersigr) + (kmasterreverbwet 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; distortion
 if(kmasterdistortionamount > 0) then
-    gamastersigl  distort1 gamastersigl, kmasterdistortionamount * $DISTORTION_MAX, 1, 1, 0
-    gamastersigr  distort1 gamastersigr, kmasterdistortionamount * $DISTORTION_MAX, 1, 1, 0
+    gamastersigl  distort1 gamastersigl, kmasterdistortionamount * $DISTORTION_MAX, 0, 1, 1
+    gamastersigr  distort1 gamastersigr, kmasterdistortionamount * $DISTORTION_MAX, 0, 1, 1
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1520,11 +1520,8 @@ endif
 gamastersigl        *= kmastergain
 gamastersigr        *= kmastergain
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;                   clip everything
-; gamastersigl        clip gamastersigl, 2, 1.0
-; gamastersigr        clip gamastersigr, 2, 1.0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;                   output to DAC
                     outs gamastersigl, gamastersigr
